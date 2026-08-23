@@ -1,0 +1,182 @@
+/* ===========================================================================
+   nest — design tokens
+   ---------------------------------------------------------------------------
+   Every visual decision in the app resolves to one of the custom properties
+   below. Components never write a raw hex code, font stack, or pixel value;
+   they reference a token. That indirection is the whole point: when a value
+   changes here, it changes everywhere at once, and nothing can drift out of
+   sync because there is no second copy of it anywhere.
+
+   These live on :root so they cascade to every element, including anything
+   React renders later. Imported once, first, in main.jsx — before index.css —
+   so the reset can consume them.
+   =========================================================================== */
+
+:root {
+  /* -- Color ---------------------------------------------------------------
+     Dark by default. Money apps get looked at late at night and often for a
+     long time, so the base is a near-black with a hint of blue (#0a0a0c)
+     rather than pure #000 — pure black next to bright text produces halation
+     that makes small type harder to read.
+
+     Surfaces climb in four steps instead of using shadows. On a dark ground,
+     a drop shadow is invisible; elevation has to be expressed as *lighter*.
+     surface-1 is the page's cards, surface-2 nests inside them, and
+     surface-raised is for things that float (menus, modals, tooltips).
+
+     The border is the text color at 9% rather than a solid grey. A translucent
+     hairline picks up whatever surface sits behind it, so one token reads
+     correctly on all four levels — a solid grey would look right on exactly
+     one of them.
+
+     Text follows the same idea: a warm off-white (#ECE7DE, not #fff — pure
+     white on near-black is fatiguing) stepped down in opacity for secondary
+     and muted roles. Opacity keeps the hue consistent as emphasis drops.
+
+     The four accents are semantic, not decorative. Each one means a specific
+     thing in this product and is never used for anything else:
+       debt      warm red-orange — money owed, the thing being paid down
+       progress  green           — payments made, balances shrinking
+       goal      amber           — targets and savings you are aiming at
+       info      blue            — neutral, non-financial UI signals
+     They are deliberately desaturated versions of the obvious red/green/
+     amber/blue so a screen full of them stays calm; debt in particular is
+     a burnt orange rather than an alarm red, because owing money is a normal
+     state to be in, not an error. */
+  --bg: #0a0a0c;
+  --surface-1: #121216;
+  --surface-2: #1a1a20;
+  --surface-raised: #24242b;
+  --border: rgba(236, 231, 222, 0.09);
+
+  --text: #ece7de;
+  --text-secondary: rgba(236, 231, 222, 0.64);
+  --text-muted: rgba(236, 231, 222, 0.4);
+
+  --debt: #f26749;
+  --progress: #5fc08a;
+  --goal: #e0a24e;
+  --info: #6c9bf0;
+
+  /* -- Typography: families ------------------------------------------------
+     Nunito for the interface: a rounded humanist sans with generous counters.
+     It stays friendly at small sizes, which suits an app whose subject matter
+     (debt) is already stressful enough without a severe grotesque.
+
+     DM Mono for numbers. Any column of figures — balances, amounts, dates —
+     goes in the mono face so digits occupy identical width and decimal points
+     line up down the column. Prose never uses it.
+
+     Both stacks end in system fallbacks so the app is fully readable during
+     the font swap, and on a failed network it degrades to something with the
+     same broad proportions rather than to Times. */
+  --font-ui:
+    Nunito, ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    "DM Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* -- Typography: sizes ---------------------------------------------------
+     Seven steps, no more. A fixed scale is what keeps a UI from accumulating
+     seventeen slightly different heading sizes over a year of feature work.
+
+     Body is 16px because that is the browser default and the point below
+     which mobile Safari zooms on focused inputs. Everything else is placed
+     relative to it: caption and label step down for metadata and form labels,
+     h3/h2/h1 step up for section, page, and screen titles, and display is
+     reserved for the one number per screen that matters most — a total
+     balance, a payoff date — where the size itself is the emphasis. */
+  --text-caption: 12px;
+  --text-label: 14px;
+  --text-body: 16px;
+  --text-h3: 20px;
+  --text-h2: 24px;
+  --text-h1: 32px;
+  --text-display: 48px;
+
+  /* -- Typography: line heights --------------------------------------------
+     Line height is inversely proportional to size. Running text needs 1.6 to
+     give the eye a clear path back to the start of the next line; a 32px
+     heading wrapping to two lines would look like two unrelated sentences at
+     that ratio, so it tightens to 1.2. Display sits at 1.0 — a single large
+     number should be exactly as tall as its own glyphs, with the surrounding
+     space controlled by margins instead. */
+  --leading-body: 1.6;
+  --leading-h1: 1.2;
+  --leading-display: 1;
+
+  /* -- Spacing -------------------------------------------------------------
+     A 4px base, nine steps, roughly doubling as it climbs. Every margin,
+     padding, and gap in the app is one of these; nothing is hand-tuned to a
+     stray 7px. The doubling means adjacent steps are visibly different, so
+     "one size up" always reads as intentional rather than accidental.
+
+     Rough roles: 1–2 sit inside a component (icon to label), 3–4 separate
+     elements within a card, 5–6 separate cards and sections, 7–9 are page
+     gutters and the vertical rhythm between major blocks. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* -- Radius --------------------------------------------------------------
+     Softened corners throughout, matched to the rounded shapes in Nunito and
+     in the nest mark. Radius scales with the element: sm for inputs, chips,
+     and buttons, md for cards, lg for panels and sheets, xl for full-screen
+     modals. Keeping radius proportional to size is what stops a large panel
+     from looking like a scaled-up button. full is the pill — avatars, tags,
+     and progress tracks, where 999px just means "however round it can get". */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* -- Border width --------------------------------------------------------
+     One width, for every border in the app. A hairline is the only rule weight
+     this UI needs: on a dark ground, separation comes from the surface steps
+     and from --border's translucency, not from heavy strokes. Having it as a
+     token rather than a literal 1px means borders can be thickened everywhere
+     at once — for a high-contrast mode, say — from a single line. */
+  --border-width: 1px;
+
+  /* -- Motion --------------------------------------------------------------
+     Three durations. fast (120ms) is for state that should feel instantaneous
+     — hover, focus, a button press. base (200ms) is the default for anything
+     that moves or changes size. slow (320ms) is for entrances: a sheet
+     sliding up, a modal appearing, where the movement itself is information.
+     Anything longer starts to feel like the app is thinking.
+
+     One easing curve for everything. It leaves fast and settles slowly, which
+     reads as responsive — the UI reacts the instant you touch it, then eases
+     into place. Using a single curve app-wide is what makes unrelated
+     animations feel like they belong to the same object. */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Reduced motion is an accessibility setting, not a preference: for people
+   with vestibular disorders, movement can cause real nausea. Rather than
+   auditing every animation individually, this collapses them all to ~0 at the
+   root. 0.01ms instead of 0 so transitionend/animationend still fire and any
+   JS waiting on them isn't left hanging. scroll-behavior goes back to instant
+   for the same reason smooth scrolling is a problem: the page moves on its
+   own. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
