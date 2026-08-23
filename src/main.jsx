@@ -1,5 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+// tokens.css must come first: index.css and every page stylesheet read the
+// custom properties it defines, so it has to be in the cascade before them.
+import "./styles/tokens.css";
 import "./index.css";
 import App from "./App.jsx";
 

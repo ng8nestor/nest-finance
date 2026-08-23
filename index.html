@@ -2,9 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>nest-finance</title>
+
+    <!-- The minimal nest mark, transparent so it sits on whatever the browser
+         paints behind a tab. PNG rather than SVG here because that is the asset
+         we have; this is the 256px export, which the browser scales down to
+         16/32px for the tab without shipping a megabyte to do it. -->
+    <link rel="icon" type="image/png" href="/brand/nest-favicon.png" />
+
+    <!-- Fonts.
+         preconnect opens the TCP + TLS handshake to both Google Fonts hosts
+         while the HTML is still parsing, so the stylesheet request below and
+         the font files it points at don't each pay for a cold connection. Two
+         hosts are needed because the CSS and the font binaries are served from
+         different origins: googleapis.com returns the @font-face rules,
+         gstatic.com returns the .woff2 files. The gstatic hint needs crossorigin
+         because fonts are fetched in CORS mode — without it the browser opens a
+         second, separate connection and the hint is wasted.
+
+         display=swap renders text immediately in the fallback stack and swaps in
+         Nunito/DM Mono when they arrive. The alternative, the browser's default
+         block behaviour, leaves the page blank for up to three seconds on a slow
+         connection. A brief reflow is a better trade than invisible text.
+
+         Weights are pinned to the four we use (Nunito 400/500/600/700) and the
+         two DM Mono needs (400/500) so we aren't downloading faces nothing
+         references. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@400;500;600;700&display=swap"
+    />
+
+    <title>nest</title>
   </head>
   <body>
     <div id="root"></div>
