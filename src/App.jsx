@@ -1,5 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Landing from "./pages/Landing.jsx";
+import Login from "./pages/Login.jsx";
+import Signup from "./pages/Signup.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 // ---------------------------------------------------------------------------
@@ -40,13 +45,41 @@ import NotFound from "./pages/NotFound.jsx";
 // the home page and "*" only takes over when nothing else matched — that makes
 // it the 404. Add new routes above it; order in the file doesn't matter, but
 // keeping "*" last matches how people read it.
+// AuthProvider sits inside BrowserRouter, not outside it. The provider itself
+// needs no router, but keeping the router as the outermost wrapper means
+// anything the auth layer grows later — redirecting after a token expires, say
+// — can reach the navigation hooks. Nesting it the other way would put the
+// provider above the router and cut it off from them.
+//
+// It wraps Routes rather than being placed on individual pages so that exactly
+// one provider exists for the app's lifetime. A provider per route would be
+// destroyed and rebuilt on every navigation, which means unsubscribing and
+// resubscribing to auth changes — and a fresh `loading: true` each time, so
+// every page transition would start by not knowing who is signed in.
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          {/* The gate goes here, in the route table, rather than inside
+              Dashboard itself. It keeps the rule visible in the one place
+              someone looks to find out what the app's URLs do, and it means
+              Dashboard never renders at all for a signed-out visitor — not even
+              for the frame before a check inside it could redirect. */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

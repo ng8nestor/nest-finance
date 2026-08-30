@@ -46,3 +46,54 @@
   max-width: calc(var(--space-9) * 4);
   text-wrap: balance;
 }
+
+.landing__actions {
+  display: flex;
+  /* Wraps to a column on a narrow screen rather than shrinking the two pills
+     until their labels break. */
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  /* Set off from the tagline by more than the column's own gap: the mark and
+     the tagline are one block of copy, and these are a separate thing to act
+     on rather than the third line of the sentence above them. */
+  margin-top: var(--space-4);
+}
+
+.landing__action {
+  /* The quiet outlined pill, matching the 404's link and the dashboard's sign
+     out — the shared shape for "go somewhere else from here". */
+  padding: var(--space-2) var(--space-5);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-label);
+  font-weight: 600;
+  transition:
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease);
+}
+
+.landing__action:hover {
+  background: var(--surface-2);
+  border-color: var(--text-muted);
+}
+
+.landing__action--primary {
+  /* --info is the token for neutral, non-financial UI signals, which is what a
+     call to action is; the money accents stay reserved for money. Text is --bg
+     because the accent is a light blue — the page colour is what reads on it. */
+  background: var(--info);
+  border-color: transparent;
+  color: var(--bg);
+  font-weight: 700;
+}
+
+.landing__action--primary:hover {
+  /* Overrides the outlined hover above: a filled control dims rather than
+     changing surface, since it has no surface underneath to change to. */
+  background: var(--info);
+  border-color: transparent;
+  opacity: 0.9;
+}

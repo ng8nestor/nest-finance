@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { SITE_NAME, SITE_TAGLINE } from "../lib/site.js";
 import "./Landing.css";
 
@@ -26,6 +27,22 @@ function Landing() {
         />
       </h1>
       <p className="landing__tagline">{SITE_TAGLINE}</p>
+
+      {/* The only way into the app. <nav> rather than a bare <div>: it is a set
+          of navigation links, so a screen reader can jump straight to it, and
+          the aria-label distinguishes it from any other nav added later.
+
+          Sign up carries the accent fill and log in the outlined treatment —
+          the same two-tier button language used on the auth pages, so the
+          weight of each control matches what it does. */}
+      <nav className="landing__actions" aria-label="Account">
+        <Link className="landing__action" to="/login">
+          Log in
+        </Link>
+        <Link className="landing__action landing__action--primary" to="/signup">
+          Sign up
+        </Link>
+      </nav>
     </main>
   );
 }
