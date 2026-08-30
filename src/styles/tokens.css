@@ -58,6 +58,33 @@
   --goal: #e0a24e;
   --info: #6c9bf0;
 
+  /* -- Color: feedback -----------------------------------------------------
+     A separate group from the four accents above, and deliberately so.
+
+     --danger is the same hex as --debt today. That is not a duplication to be
+     tidied away later by pointing one at the other — they are two different
+     meanings that currently happen to agree on a colour. --debt means "this is
+     money you owe": it belongs to a balance, a payoff figure, a number with a
+     financial fact behind it. --danger means "something went wrong": a form the
+     server rejected, a sync that failed, an action that could not complete.
+     Nothing about a failed sign-in is debt, and nothing about a credit card
+     balance is an error.
+
+     Holding them as two tokens is precisely what lets them diverge. The day an
+     error state needs to shout louder than a balance figure, or the debt colour
+     shifts to fit a chart palette, it is one line changed here. Had both used
+     the literal #f26749, or had --danger been defined as var(--debt), that same
+     change would start with reading every component that uses it and deciding,
+     case by case, which ones meant "debt" and which meant "error". One is an
+     edit; the other is an audit.
+
+     --danger-bg is the same hue at 12% — enough to tint a panel so the message
+     reads as its own region, not so much that it competes with the text on top
+     of it. Translucent rather than solid, like --border, so the one value sits
+     correctly on any of the four surface levels instead of being tuned to one. */
+  --danger: #f26749;
+  --danger-bg: rgba(242, 103, 73, 0.12);
+
   /* -- Typography: families ------------------------------------------------
      Nunito for the interface: a rounded humanist sans with generous counters.
      It stays friendly at small sizes, which suits an app whose subject matter

@@ -1,0 +1,177 @@
+/* Shared by /signup and /login. The two are the same screen with different
+   copy, so they share one stylesheet instead of keeping two near-identical
+   copies in sync. Same rule as every other file here: no hex codes, no raw
+   pixel measurements. Anything not literally on the scale is written as a
+   multiple of a token so it still moves if the scale changes. */
+
+.auth {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-5);
+}
+
+.auth__card {
+  /* A measure, not a layout width: a login form wider than this leaves the
+     labels stranded a long way from the fields they name. width:100% lets it
+     shrink below that on a phone, where the padding above is the only gutter. */
+  width: 100%;
+  max-width: calc(var(--space-9) * 4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-5);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.auth__title {
+  font-size: var(--text-h2);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+}
+
+.auth__subtitle {
+  /* Pulled up against the title: the two are one block, and the card's own gap
+     would otherwise read as a separation between unrelated things. */
+  margin-top: calc(var(--space-5) * -1 + var(--space-2));
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+}
+
+.auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.auth__label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.auth__input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  /* Body size specifically, not label size: mobile Safari zooms the whole page
+     when a focused input's text is under 16px, and the zoom does not undo
+     itself when the field blurs. */
+  font-size: var(--text-body);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.auth__input:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+/* The focus ring comes from the app-wide :focus-visible rule in index.css, so
+   there is nothing to add here — and nothing to remove, which is the usual way
+   keyboard navigation gets broken on a form. */
+
+.auth__input:disabled {
+  /* Fields go inert while a submit is in flight. Dimming rather than recolouring
+     keeps the token palette out of it — opacity is a state, not a colour. */
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth__hint {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+
+.auth__error {
+  /* --danger, not --debt. The two carry the same hex right now, but this panel
+     means "the server rejected that", which has nothing to do with money owed;
+     see the note in tokens.css for why they are kept as separate tokens.
+
+     Colour is not left to carry the message alone. The tinted --danger-bg gives
+     the text its own region rather than leaving it loose in the form, the
+     hairline draws the edge of that region, and role="alert" in the JSX makes a
+     screen reader announce it the moment it appears — so the message still
+     lands for anyone who cannot distinguish the tint from the card behind it. */
+  padding: var(--space-3) var(--space-4);
+  background: var(--danger-bg);
+  border: var(--border-width) solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+.auth__submit {
+  padding: var(--space-3) var(--space-5);
+  /* A transparent border of the same width as the inputs' keeps the button the
+     same height as them, so a stack of controls lines up. */
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  /* --info is the token for neutral, non-financial UI signals, which is exactly
+     what a submit button is. The accents that carry money meaning stay reserved
+     for money. Text is --bg rather than white: the accent is a light blue, so
+     the dark page colour is what reads on top of it. */
+  background: var(--info);
+  color: var(--bg);
+  font-size: var(--text-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.auth__submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.auth__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth__alt {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.auth__link {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: underline;
+  /* The underline sits clear of the descenders rather than cutting through
+     them, which is the difference between a link and a struck-through word. */
+  text-underline-offset: var(--space-1);
+}
+
+/* The quiet outlined button used on the "check your email" panel — the same
+   shape as the one on the 404 page, since both are "you are done here, go
+   there next" actions rather than the primary action of a form. */
+.auth__secondary-action {
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-5);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-label);
+  font-weight: 600;
+  transition:
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
+}
+
+.auth__secondary-action:hover {
+  background: var(--surface-raised);
+  border-color: var(--text-muted);
+}
