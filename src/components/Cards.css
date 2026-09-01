@@ -247,13 +247,65 @@
   overflow-wrap: anywhere;
 }
 
-/* The balance is the one figure on the card that is money owed, so it is the
-   one that gets --debt. A burnt orange rather than an alarm red, on purpose:
-   carrying a balance is an ordinary state to be in, not an error. The other
-   three are context for it and stay in the ordinary text colour — colouring all
-   four would mean colouring none of them, since nothing would stand out. */
+/* The two toned figures. The balance is money owed, so it gets --debt: a burnt
+   orange rather than an alarm red, on purpose, because carrying a balance is an
+   ordinary state to be in, not an error.
+
+   Utilisation takes whichever of the two the threshold puts it on — over 30% is
+   --debt for the same reason the balance is, at or under is --progress, the
+   token for balances shrinking. It is the one figure on a card that can be good
+   news, and the only one that changes colour with its value.
+
+   Everything else stays in the ordinary text colour. Colouring every figure
+   would mean colouring none of them, since nothing would stand out. */
 .card__figure-value--debt {
   color: var(--debt);
+}
+
+.card__figure-value--progress {
+  color: var(--progress);
+}
+
+/* ---------------------------------------------------------------------------
+   The growing-balance flag
+   --------------------------------------------------------------------------- */
+
+/* A badge on the card, sitting between its name and its figures — above the
+   numbers because it is a conclusion drawn from two of them, and reading it
+   after the fact it explains would be reading them in the wrong order.
+
+   The feedback tokens rather than --debt, which is what every other coloured
+   thing on this card uses. The distinction is the one tokens.css draws: the
+   balance beneath is money owed, an ordinary state; this is a warning that a
+   payment plan is not working, which is a different kind of statement and gets
+   a different colour, even though the two happen to resolve to the same hex
+   today.
+
+   The tint and hairline are what make it a badge rather than a red sentence.
+   Colour alone carrying a warning fails for anyone who cannot distinguish it,
+   which is why the message says the whole thing in words: the styling is
+   emphasis on a sentence that already stands on its own. */
+.card__flag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  background: var(--danger-bg);
+  border: var(--border-width) solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+/* The two-word summary, so the badge is scannable down a list of cards without
+   reading each sentence. Uppercase and letterspaced to match the figure labels
+   below it — it is doing the same job they are. */
+.card__flag-mark {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: var(--space-1);
+  text-transform: uppercase;
 }
 
 .card__actions {

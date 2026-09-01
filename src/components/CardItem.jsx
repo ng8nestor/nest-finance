@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { formatCurrency, formatDate, formatPercent } from "../lib/format.js";
+import {
+  formatCurrency,
+  formatDate,
+  formatPercent,
+  formatRatio,
+} from "../lib/format.js";
+import {
+  balanceGrowsFlag,
+  cardUtilization,
+  isUtilizationHigh,
+} from "../lib/finance.js";
 
 // One card in the list: what it holds, and the two things you can do to it.
 //
@@ -19,18 +29,24 @@ import { formatCurrency, formatDate, formatPercent } from "../lib/format.js";
 // the figures line up down the column no matter what they are; running the
 // labels through it too would just make the words worse.
 //
-// `debt` marks the one figure on a card that is money owed. It is a prop rather
-// than a :first-child rule in the stylesheet because which figure that is, is a
-// fact about the data — reordering the list below should not silently move the
-// colour onto whatever ends up first.
-function Figure({ label, value, debt }) {
+// `tone` names what a figure means, and the stylesheet decides what that looks
+// like. It is a prop rather than a :first-child rule because which figure is
+// money owed is a fact about the data — reordering the list below should not
+// silently move the colour onto whatever ends up first.
+//
+// Two tones are used: "debt" for the balance, which is money owed, and
+// "progress" for a utilisation that is within the threshold, which is the one
+// thing on a card worth reading as good news. Everything else passes no tone
+// and stays in the ordinary text colour. Colouring all six figures would be
+// the same as colouring none of them, since nothing would stand out.
+function Figure({ label, value, tone }) {
   return (
     <div className="card__figure">
       <dt className="card__figure-label">{label}</dt>
       <dd
         className={
-          debt
-            ? "card__figure-value card__figure-value--debt"
+          tone
+            ? `card__figure-value card__figure-value--${tone}`
             : "card__figure-value"
         }
       >
@@ -47,6 +63,12 @@ function CardItem({ card, onEdit, onDelete }) {
   // on screen — a labelled slot implies there is something that belongs in it,
   // and for most cards there simply isn't.
   const dueDate = formatDate(card.due_date);
+
+  // Both from lib/finance.js, both nullable, and neither computed here. The
+  // card's share of its credit line, and whether a month's interest on it
+  // exceeds the minimum payment.
+  const utilization = cardUtilization(card);
+  const growing = balanceGrowsFlag(card);
 
   // Deleting is in two steps, and this is which one we are on.
   const [confirming, setConfirming] = useState(false);
@@ -94,8 +116,34 @@ function CardItem({ card, onEdit, onDelete }) {
         {card.issuer && <p className="card__issuer">{card.issuer}</p>}
       </div>
 
+      {/* The one thing on a card that changes what someone should do rather
+          than describing where they are: paying the minimum on this card
+          leaves the balance larger than it started.
+
+          A badge on the card rather than a warnings section further down the
+          page, because the fact belongs to this card and is meaningless
+          without it — a list of alerts elsewhere would make the reader carry
+          a card's name from one part of the screen to another to act on it.
+
+          The feedback tokens, not --debt. Every other number on this card is
+          a measurement of money owed, which is an ordinary state to be in;
+          this is a warning that something is going wrong, which is what
+          --danger is for. See the note in tokens.css on why the two are held
+          apart even while they share a value. */}
+      {growing && (
+        <p className="card__flag">
+          <strong className="card__flag-mark">Balance growing</strong>
+          The minimum payment doesn&rsquo;t cover a month&rsquo;s interest on
+          this card, so the balance goes up even when you pay on time.
+        </p>
+      )}
+
       <dl className="card__figures">
-        <Figure label="Balance" value={formatCurrency(card.balance)} debt />
+        <Figure
+          label="Balance"
+          value={formatCurrency(card.balance)}
+          tone="debt"
+        />
         {/* apr_pct arrives as the percent it is — 24.99 — and is formatted as
             one. No arithmetic between the column and the screen. */}
         <Figure label="APR" value={formatPercent(card.apr_pct)} />
@@ -103,6 +151,22 @@ function CardItem({ card, onEdit, onDelete }) {
           label="Credit limit"
           value={formatCurrency(card.credit_limit)}
         />
+        {/* Straight after the two figures it is the ratio of, and skipped
+            entirely when there is no usable credit limit to divide by — the
+            same reasoning as the due date below. A labelled slot implies there
+            is something that belongs in it.
+
+            Same colour rule as the overall figure in the summary above, from
+            the same function: over 30% is --debt, at or under is --progress.
+            Two thresholds that agreed by coincidence would be one bug away
+            from disagreeing. */}
+        {utilization !== null && (
+          <Figure
+            label="Utilization"
+            value={formatRatio(utilization)}
+            tone={isUtilizationHigh(utilization) ? "debt" : "progress"}
+          />
+        )}
         <Figure label="Minimum due" value={formatCurrency(card.min_due)} />
         {/* Last, and next to the minimum payment it belongs with. Formatted by
             Intl and pinned to UTC — see lib/format.js for why a date column read

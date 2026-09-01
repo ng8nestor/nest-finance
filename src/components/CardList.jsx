@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { listCards, createCard, updateCard, deleteCard } from "../lib/cards.js";
+import { useState } from "react";
 import CardForm from "./CardForm.jsx";
 import CardItem from "./CardItem.jsx";
 import "./Cards.css";
@@ -7,6 +6,19 @@ import "./Cards.css";
 // ===========================================================================
 // The cards section of the dashboard: the list, the form that adds to it, and
 // the three states a list fetched over a network can be in before it is a list.
+//
+// ---------------------------------------------------------------------------
+// Where the cards come from
+//
+// From props, since the dashboard grew a summary above this section that is
+// computed from the same rows. The request, the loading and error states, and
+// the three writes all live in hooks/useCards.js now, called once by the page —
+// see the note there for why one fetch shared beats two components each
+// fetching their own.
+//
+// What stayed here is the state that is genuinely about this section: which
+// form is open. The page has no interest in whether a card is being edited, and
+// lifting that too would be lifting for its own sake.
 //
 // ---------------------------------------------------------------------------
 // Loading, error, empty
@@ -24,33 +36,21 @@ import "./Cards.css";
 // its own: it is the state before the answer arrives, the state after a failure,
 // and the state of a genuinely empty account, and those call for a wait, a
 // retry, and an invitation respectively. Only `loading` and `error` can tell
-// them apart, which is why both exist as state rather than being inferred.
+// them apart, which is why both are passed in rather than being inferred.
 //
 // The same distinction ProtectedRoute draws between "don't know yet" and
 // "nobody", one layer down.
 // ===========================================================================
 
-function CardList() {
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
-
-  // Bumped by "Try again", which is all a retry is: ask for the list once more.
-  // A counter rather than a boolean so that pressing it twice runs it twice.
-  const [attempt, setAttempt] = useState(0);
-
-  // The retry, and the reason `loading` is moved back to true here rather than
-  // at the top of the effect below. Setting state synchronously inside an effect
-  // makes React render, run the effect, and render again — a cascade the linter
-  // rightly objects to. Pressing the button is the event that starts a load, so
-  // it is the button that puts the section back into its loading state; the
-  // effect is then purely the request.
-  function retry() {
-    setLoading(true);
-    setLoadError(null);
-    setAttempt((n) => n + 1);
-  }
-
+function CardList({
+  cards,
+  loading,
+  error,
+  onRetry,
+  onCreate,
+  onUpdate,
+  onDelete,
+}) {
   // Which form, if any, is open. Only one can be: `adding` for a new card, and
   // `editingId` for the card being edited, which renders in that card's place.
   // Opening either closes the other, so the page never asks for two cards at
@@ -58,65 +58,28 @@ function CardList() {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    // StrictMode runs this effect twice in development. `cancelled` stops the
-    // first run's in-flight request from writing state after its cleanup — the
-    // same guard, for the same reason, as the one in AuthContext.jsx.
-    let cancelled = false;
-
-    listCards().then(({ cards: rows, error }) => {
-      if (cancelled) return;
-
-      // On failure the previous list is deliberately left alone rather than
-      // cleared. A retry that fails should not also take away what was already
-      // on screen.
-      if (error) setLoadError(error);
-      else setCards(rows);
-
-      setLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt]);
-
-  // The three write paths. Each resolves to an error sentence for the component
-  // that asked, or null if it worked — the form and the card row own showing
-  // that message, since it belongs next to the thing that failed rather than at
-  // the top of the section.
+  // The two writes that close a form when they succeed. The write itself
+  // belongs to the page — the summary above recomputes from the same array —
+  // but "and then put the form away" is this section's business, so it is
+  // wrapped here rather than being something useCards() has to know about.
   //
-  // On success the local list is updated from the row the database returned,
-  // instead of re-fetching. The response is the stored row, so the list is
-  // already what a re-fetch would produce, and refetching would mean a second
-  // round trip and a flash of the loading state over a list that is on screen
-  // and correct.
+  // Each returns an error sentence for the form that asked, or null if it
+  // worked. The form owns showing that message, since it belongs next to the
+  // fields that produced it.
 
   async function handleCreate(fields) {
-    const { card, error } = await createCard(fields);
-    if (error) return error;
+    const message = await onCreate(fields);
+    if (message) return message;
 
-    // Prepended, because listCards() sorts newest first — the new card belongs
-    // at the top for the same reason it is sorted that way.
-    setCards((current) => [card, ...current]);
     setAdding(false);
     return null;
   }
 
   async function handleUpdate(id, fields) {
-    const { card, error } = await updateCard(id, fields);
-    if (error) return error;
+    const message = await onUpdate(id, fields);
+    if (message) return message;
 
-    setCards((current) => current.map((row) => (row.id === id ? card : row)));
     setEditingId(null);
-    return null;
-  }
-
-  async function handleDelete(id) {
-    const { error } = await deleteCard(id);
-    if (error) return error;
-
-    setCards((current) => current.filter((row) => row.id !== id));
     return null;
   }
 
@@ -142,7 +105,7 @@ function CardList() {
             offering the same thing on an otherwise empty screen is one too
             many. It also goes away while the form is open, since the form is
             the thing it opens. */}
-        {!loading && !loadError && cards.length > 0 && !adding && (
+        {!loading && !error && cards.length > 0 && !adding && (
           <button className="cards__add" type="button" onClick={startAdding}>
             Add a card
           </button>
@@ -158,13 +121,13 @@ function CardList() {
         </p>
       )}
 
-      {loadError && (
+      {error && (
         <div className="cards__error" role="alert">
-          <p>{loadError}</p>
+          <p>{error}</p>
           {/* A dead end is what makes an error page feel broken. The failure
               here is usually momentary — a dropped connection, a slow
               round trip — so the fix is one button, not a page reload. */}
-          <button className="cards__retry" type="button" onClick={retry}>
+          <button className="cards__retry" type="button" onClick={onRetry}>
             Try again
           </button>
         </div>
@@ -178,7 +141,7 @@ function CardList() {
           nothing wrong here. Someone has just signed up and has not told us
           anything yet, so the screen says what to do first and what it gets
           them. */}
-      {!loading && !loadError && cards.length === 0 && !adding && (
+      {!loading && !error && cards.length === 0 && !adding && (
         <div className="cards__empty">
           <p className="cards__empty-title">Start with one card.</p>
           <p className="cards__empty-body">
@@ -216,7 +179,7 @@ function CardList() {
                 key={card.id}
                 card={card}
                 onEdit={startEditing}
-                onDelete={handleDelete}
+                onDelete={onDelete}
               />
             ),
           )}

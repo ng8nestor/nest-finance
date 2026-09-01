@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth.js";
+import { useCards } from "../hooks/useCards.js";
+import DebtCommandCenter from "../components/DebtCommandCenter.jsx";
 import CardList from "../components/CardList.jsx";
 import { SITE_NAME } from "../lib/site.js";
 import "./Dashboard.css";
@@ -13,6 +15,24 @@ import "./Dashboard.css";
 // every protected page from repeating it.
 function Dashboard() {
   const { user, signOut } = useAuth();
+
+  // One request, two readers. The summary and the list are computed from the
+  // same array in the same render, so the total above can never describe a set
+  // of cards different from the one below it — see hooks/useCards.js for why
+  // that is worth lifting the fetch out of CardList for.
+  // `error` is renamed on the way out. The page already has one — the sign-out
+  // failure below — and the two are unrelated failures of unrelated actions.
+  // Sharing one name would mean the next person reading this has to work out
+  // which of two things went wrong from context.
+  const {
+    cards,
+    loading,
+    error: cardsError,
+    retry,
+    create,
+    update,
+    remove,
+  } = useCards();
 
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState(null);
@@ -46,11 +66,27 @@ function Dashboard() {
         <h1 className="dashboard__title">Dashboard</h1>
       </header>
 
-      {/* The cards own their loading, error and empty states rather than this
-          page owning them: everything those states describe is the result of
-          one request that CardList makes, and a page-level spinner would be
-          this component reporting on work it does not do. */}
-      <CardList />
+      {/* Above the list, and first on the page after its title, because it is
+          the answer to the question someone opens this screen with. The list
+          below is the detail behind it.
+
+          Both sections are handed the same loading and error state rather than
+          this page rendering one spinner over the pair of them. They are the
+          same request, but they are not the same statement: the list says "we
+          are still fetching your cards" and the summary says "we are still
+          adding up what they cost", and a single generic message in place of
+          both would be less true than either. */}
+      <DebtCommandCenter cards={cards} loading={loading} error={cardsError} />
+
+      <CardList
+        cards={cards}
+        loading={loading}
+        error={cardsError}
+        onRetry={retry}
+        onCreate={create}
+        onUpdate={update}
+        onDelete={remove}
+      />
 
       <section className="dashboard__panel">
         <h2 className="dashboard__panel-label">Account</h2>

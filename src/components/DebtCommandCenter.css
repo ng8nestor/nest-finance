@@ -1,0 +1,243 @@
+/* The dashboard's summary panel: the bleed meter and the utilisation bar.
+
+   Tokens only, same rule as every other stylesheet here. Anything not literally
+   on a scale is written as a multiple of a token so it moves when the scale
+   does.
+
+   ---------------------------------------------------------------------------
+   The one place a ratio becomes a length
+
+   The bar's fill and its threshold mark are positioned from custom properties
+   holding raw ratios — 0.42 and 0.3 — set on the element by the component. The
+   multiplication into a percentage happens here, in calc().
+
+   That is on purpose, and it is the reason there is no arithmetic in
+   DebtCommandCenter.jsx. Writing style={{ width: `${ratio * 100}%` }} would put
+   a multiplication by 100 in a component, in a codebase whose whole convention
+   is that the conversion between a ratio and a percent happens in exactly one
+   file. calc(var(--fill) * 100%) is not that conversion: it is a ratio being
+   turned into a length by the thing that draws lengths, which is what CSS is
+   for. The number never stops being a ratio on its way here.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   The panel
+   --------------------------------------------------------------------------- */
+
+.command-center {
+  /* The dashboard column lays its children out at flex-start, which would
+     otherwise leave this only as wide as its longest line. */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  /* Tight, because the label, the figure and the two lines under it are one
+     statement. The utilisation block below buys its own separation back with a
+     margin, so the grouping reads as "one big thing, then a smaller thing"
+     rather than as four evenly spaced paragraphs. */
+  gap: var(--space-2);
+  /* Roomier than a card and rounder than one. This is the largest element on
+     the screen and it should look placed rather than merely present; the extra
+     padding is most of what does that. */
+  padding: var(--space-6) var(--space-5);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+/* Loading and empty. Both hold the panel's shape without its emphasis: the
+   figures are not here yet, or there are none, and in neither case should a
+   panel this size be shouting. */
+.command-center--quiet {
+  padding: var(--space-5);
+}
+
+.command-center__status,
+.command-center__invitation {
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+}
+
+/* ---------------------------------------------------------------------------
+   The bleed meter
+   --------------------------------------------------------------------------- */
+
+/* Set in the interface face, not the mono one. The mono face is for digits;
+   running it through a line of prose would make the words worse and would blur
+   the distinction that makes the figure below read as a number rather than as
+   more text. */
+.command-center__label {
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: var(--space-1);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.command-center__bleed {
+  /* --text-display, the step the scale reserves for the one number per screen
+     that matters most. This is that number, and nothing else in the app uses
+     it. */
+  font-size: var(--text-display);
+  /* 1.0: a single large figure should be exactly as tall as its own glyphs,
+     with the space around it coming from the gap above and below. */
+  line-height: var(--leading-display);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--debt);
+  /* Long amounts break the layout before they break the sentence. numeric(12,2)
+     across several cards goes into six figures, and on a narrow screen that is
+     wider than the panel. */
+  overflow-wrap: anywhere;
+}
+
+/* The settled figure, exposed to assistive technology and to nothing else.
+   See the note in DebtCommandCenter.jsx for why the animated digits are hidden
+   and this is read instead.
+
+   These are the technique's own constants rather than design values, which is
+   why they are not tokens: a 1px box is the smallest one that reliably stays in
+   the accessibility tree, and clip-path removes it from view without removing
+   it from the document the way display: none would. Nothing here is a decision
+   about how the app looks. */
+.command-center__settled {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.command-center__annual {
+  /* A long step down from display, and the drop is doing the work: the annual
+     figure is the same fact over a longer horizon, so it should read as a
+     consequence of the number above rather than as a second headline
+     competing with it. */
+  font-size: var(--text-h3);
+  color: var(--text-secondary);
+}
+
+/* The mono face on the amount alone. The sentence around it stays in the
+   interface face — see the note in DebtCommandCenter.jsx. */
+.command-center__annual-amount {
+  font-family: var(--font-mono);
+  /* Six figures on a narrow screen is wider than the panel, and this is the
+     only part of the line with no spaces to break at. */
+  overflow-wrap: anywhere;
+}
+
+.command-center__note {
+  /* Back in the interface face — this is a sentence, not a figure. */
+  margin-top: var(--space-1);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Utilisation
+   --------------------------------------------------------------------------- */
+
+.usage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* Separated from the meter above by a full section step, then given a
+     hairline. Second in the order of weight means visibly second: a reader
+     should finish the figure above before this starts. */
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: var(--border-width) solid var(--border);
+}
+
+.usage__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.usage__label {
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: var(--space-1);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.usage__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-h2);
+  /* At or below the threshold, this is the app's one piece of good news, so it
+     gets --progress: the token for balances shrinking and payments landing.
+     The high case overrides it below. */
+  color: var(--progress);
+}
+
+/* Above 30%. --debt rather than --danger: a high utilisation is a fact about
+   money owed, not a failure of anything — see the note in tokens.css on why the
+   two are separate tokens even while they share a value. The only thing on this
+   screen that gets the feedback tokens is the growing-balance flag on a card,
+   which is a warning rather than a measurement. */
+.usage__value--high {
+  color: var(--debt);
+}
+
+.usage__meter {
+  position: relative;
+  /* Room for the threshold mark, which stands taller than the track it crosses
+     so it is legible against the panel as well as against the fill. Without
+     this the flex gap above and below would be measured to the track instead
+     and the mark would sit tight against its neighbours. */
+  padding-block: var(--space-1);
+}
+
+.usage__track {
+  height: var(--space-2);
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  /* The fill is clipped by the track rather than rounding itself, which is what
+     keeps a 2% sliver from rendering as a circle. */
+  overflow: hidden;
+}
+
+.usage__fill {
+  height: 100%;
+  /* The ratio, turned into a length. min() caps the draw at the full track
+     without capping the number: a balance over its limit is a real thing that
+     lib/finance.js deliberately does not clamp, and the percentage above stays
+     honest about it — 112% in text, a full bar underneath, because there is no
+     more bar to draw. */
+  width: min(calc(var(--fill) * 100%), 100%);
+  background: var(--progress);
+}
+
+.usage__fill--high {
+  background: var(--debt);
+}
+
+/* The 30% line, drawn across the track at the ratio the component passes in.
+
+   --text at full strength because it is the one value legible against all three
+   things it can sit on: the empty track, a green fill, and an orange one. It
+   also extends past the track top and bottom, which both makes it findable when
+   the fill is nowhere near it and stops it reading as a gap in the bar. */
+.usage__threshold {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--threshold) * 100%);
+  /* Centred on the mark rather than starting at it — a rule two pixels wide
+     drawn from the 30% point would mark 30% to 30.5%. */
+  transform: translateX(-50%);
+  width: calc(var(--border-width) * 2);
+  background: var(--text);
+  border-radius: var(--radius-full);
+}
+
+.usage__scale {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
