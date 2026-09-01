@@ -1,0 +1,484 @@
+/* The cards section of the dashboard: the list, one card, and the form shared
+   by adding and editing. One stylesheet for the three components because they
+   are one region of one screen — splitting them into three files would mean
+   three places to look for the spacing that holds them together.
+
+   Same rule as everywhere else in this app: no hex codes, no raw pixels.
+   Anything not literally on the scale is written as a multiple of a token so it
+   moves when the scale does. */
+
+/* ---------------------------------------------------------------------------
+   The section
+   --------------------------------------------------------------------------- */
+
+.cards {
+  /* The dashboard column lays its children out at flex-start, which would leave
+     this section only as wide as its widest line of text. */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cards__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  /* The heading and its button stack rather than squeeze on a narrow screen. */
+  flex-wrap: wrap;
+}
+
+.cards__heading {
+  font-size: var(--text-h2);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+}
+
+/* The quiet pill used for secondary actions across the app — the same shape as
+   the dashboard's log-out button and the 404 page's link. Adding a card is
+   offered, not urged: the accent fill is kept for the submit button inside the
+   form, which is the moment something actually happens. */
+.cards__add,
+.cards__retry,
+.card__action {
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  color: var(--text);
+  font-size: var(--text-label);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
+}
+
+.cards__add:hover:not(:disabled),
+.cards__retry:hover:not(:disabled),
+.card__action:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--text-muted);
+}
+
+.cards__add:disabled,
+.cards__retry:disabled,
+.card__action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+   Loading and error
+   --------------------------------------------------------------------------- */
+
+.cards__status {
+  /* Given the same padding and height as a card so the list does not jump when
+     the real content replaces this line. */
+  padding: var(--space-5);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+}
+
+.cards__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  /* --danger, not --debt: this is a request that failed, which has nothing to
+     do with money owed. See the note in tokens.css for why the two are held as
+     separate tokens even while they share a value. */
+  background: var(--danger-bg);
+  border: var(--border-width) solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+.cards__retry {
+  /* Readable on the tinted panel: the pill's own surface, not the tint. */
+  background: var(--surface-1);
+}
+
+/* ---------------------------------------------------------------------------
+   Empty state
+   --------------------------------------------------------------------------- */
+
+.cards__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  /* Roomier than a card. An empty screen that hugs its own text reads as a
+     missing component; giving the invitation space makes it look placed. */
+  padding: var(--space-7) var(--space-5);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.cards__empty-title {
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.cards__empty-body {
+  max-width: calc(var(--space-9) * 4);
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+}
+
+.cards__empty-action {
+  /* The one place an empty screen offers, so it gets the accent fill rather
+     than the quiet pill — there is nothing else here to compete with. */
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--info);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--bg);
+  font-size: var(--text-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.cards__empty-action:hover {
+  opacity: 0.9;
+}
+
+/* ---------------------------------------------------------------------------
+   The list
+   --------------------------------------------------------------------------- */
+
+.cards__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The list item wrapping an open edit form. It carries no styling of its own —
+   the form inside it is already card-shaped — but it has to exist so the form
+   is a valid child of the <ul>. */
+.cards__editing {
+  display: contents;
+}
+
+/* ---------------------------------------------------------------------------
+   One card
+   --------------------------------------------------------------------------- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.card__heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.card__name {
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.card__issuer {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.card__figures {
+  /* Two figures across on the dashboard's column width, four if the card is
+     ever given a wider one. auto-fit with a minimum column width does that
+     without a breakpoint: the browser fits as many columns as will hold their
+     contents and wraps the rest.
+
+     The minimum is set by the widest amount these columns have to hold, not by
+     the average one. numeric(12,2) goes into the millions, and a column sized
+     for "$1,250.40" breaks "$9,840,123.50" across two lines — which, in the
+     mono face, reads as two numbers rather than one. Wide enough for the worst
+     case is the only width that is right for all of them. */
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(calc(var(--space-9) * 2), 1fr)
+  );
+  gap: var(--space-4);
+}
+
+.card__figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.card__figure-label {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: var(--space-1);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.card__figure-value {
+  /* The mono face, so digits are all one width and the figures line up down the
+     grid regardless of what the amounts are. Numbers only — the labels above
+     stay in the UI face. */
+  font-family: var(--font-mono);
+  font-size: var(--text-h3);
+  /* <dd> carries a default indent from the browser's stylesheet, and the reset
+     in index.css only zeroes margins on the elements it lists. */
+  margin: 0;
+  /* Amounts can be long; a tight grid column should not push the card wider
+     than the page. */
+  overflow-wrap: anywhere;
+}
+
+/* The balance is the one figure on the card that is money owed, so it is the
+   one that gets --debt. A burnt orange rather than an alarm red, on purpose:
+   carrying a balance is an ordinary state to be in, not an error. The other
+   three are context for it and stay in the ordinary text colour — colouring all
+   four would mean colouring none of them, since nothing would stand out. */
+.card__figure-value--debt {
+  color: var(--debt);
+}
+
+.card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.card__error {
+  padding: var(--space-3) var(--space-4);
+  background: var(--danger-bg);
+  border: var(--border-width) solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+.card__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  /* Raised rather than tinted red. The question is not itself an error, and
+     colouring it as one would spend the danger tokens before the destructive
+     button that actually needs them. */
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.card__confirm-question {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.card__confirm .card__action {
+  /* The pill sits on surface-2 here, so it steps up rather than disappearing
+     into the panel behind it. */
+  background: var(--surface-raised);
+}
+
+.card__action--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.card__confirm .card__action--danger:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ---------------------------------------------------------------------------
+   The form
+   --------------------------------------------------------------------------- */
+
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.card-form__title {
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+/* Two fields side by side where there is room, stacked where there is not.
+   Same auto-fit approach as the figures grid, with a minimum wide enough that
+   a number field never gets too narrow to read what is in it. */
+.card-form__row {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(calc(var(--space-9) * 1.5), 1fr)
+  );
+  gap: var(--space-4);
+}
+
+.card-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.card-form__label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.card-form__input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  /* Body size specifically: mobile Safari zooms the page when a focused input's
+     text is under 16px, and does not zoom back out on blur. */
+  font-size: var(--text-body);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.card-form__input--number,
+.card-form__input--date {
+  /* Amounts and dates are typed as well as read, and the mono face keeps the
+     digits an even width while they are being entered too. */
+  font-family: var(--font-mono);
+}
+
+.card-form__input--date {
+  /* A date is a fixed-width value, so the field is sized to it rather than to
+     the form. Stretched across the full width it would read as the largest
+     input on screen while holding the smallest value on it.
+
+     No max-width on a narrow screen: below roughly this width the cap would
+     start fighting the form's own gutters, and the field should simply fill the
+     column like every other one. */
+  max-width: 100%;
+  width: calc(var(--space-9) * 2.5);
+}
+
+.card-form__input:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+/* The focus ring comes from the app-wide :focus-visible rule in index.css.
+   Nothing to add, and nothing to remove — removing it is the usual way keyboard
+   navigation gets broken on a form. */
+
+.card-form__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* A field the form is complaining about. The border is the only colour on the
+   input itself; recolouring the text would make what the person typed look like
+   the error, when the error is about the value, not the typing. */
+.card-form__input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.card-form__hint {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+
+.card-form__field-error {
+  /* Deliberately not the tinted panel used for server errors. A field message
+     sits directly under its input, where the panel's padding and border would
+     push the next field away and make one bad field reflow the whole form.
+     Colour is not carrying this alone either: aria-invalid and
+     aria-describedby in the JSX are what tie the message to the input for
+     anyone who cannot see the red. */
+  color: var(--danger);
+  font-size: var(--text-caption);
+}
+
+.card-form__error {
+  padding: var(--space-3) var(--space-4);
+  background: var(--danger-bg);
+  border: var(--border-width) solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+.card-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.card-form__submit {
+  padding: var(--space-3) var(--space-5);
+  /* A transparent border matching the inputs' keeps this the same height as the
+     cancel button beside it. */
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  /* --info: the token for neutral, non-financial UI signals, which is what a
+     submit button is. The money accents stay reserved for money. */
+  background: var(--info);
+  color: var(--bg);
+  font-size: var(--text-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.card-form__submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.card-form__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card-form__cancel {
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: var(--text-label);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
+}
+
+.card-form__cancel:hover:not(:disabled) {
+  background: var(--surface-raised);
+  border-color: var(--text-muted);
+}
+
+.card-form__cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

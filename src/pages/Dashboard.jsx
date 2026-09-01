@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth.js";
+import CardList from "../components/CardList.jsx";
 import { SITE_NAME } from "../lib/site.js";
 import "./Dashboard.css";
 
@@ -39,8 +40,17 @@ function Dashboard() {
     <main className="dashboard">
       <header className="dashboard__header">
         <p className="dashboard__brand">{SITE_NAME}</p>
-        <h1 className="dashboard__title">You&rsquo;re logged in</h1>
+        {/* The page's own title, not the cards' — the section below names
+            itself, and two headings both reading "Your cards" would be one
+            heading and an echo. */}
+        <h1 className="dashboard__title">Dashboard</h1>
       </header>
+
+      {/* The cards own their loading, error and empty states rather than this
+          page owning them: everything those states describe is the result of
+          one request that CardList makes, and a page-level spinner would be
+          this component reporting on work it does not do. */}
+      <CardList />
 
       <section className="dashboard__panel">
         <h2 className="dashboard__panel-label">Account</h2>

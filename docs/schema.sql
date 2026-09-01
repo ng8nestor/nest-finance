@@ -1,6 +1,11 @@
 create table credit_cards (
   id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null references auth.users(id) on delete cascade,
+  -- Filled by the database, never by the client. auth.uid() reads the user id
+  -- out of the JWT on the request, so the value written is produced by the same
+  -- call the four policies below check against — and a browser has no way to
+  -- name a different owner. See the long note in src/lib/cards.js.
+  user_id       uuid not null default auth.uid()
+                references auth.users(id) on delete cascade,
   name          text not null,
   issuer        text,
   balance       numeric(12,2) not null check (balance >= 0),
