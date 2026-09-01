@@ -50,6 +50,28 @@ const PERCENT = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 3,
 });
 
+// A utilisation ratio, as a percentage.
+//
+// This is the other half of the note above, and the reason both formatters can
+// exist in one file without contradicting each other. style: "unit" formats the
+// number as given, which is what an APR needs: apr_pct holds 24.99 and means
+// 24.99%. style: "percent" assumes the *fraction* form and multiplies by 100
+// itself, which is what a utilisation needs: cardUtilization() returns 0.42 and
+// means 42%.
+//
+// Two representations, two formatters, and — the part that matters — no
+// arithmetic in either. Nothing here converts between the forms; each function
+// is simply pointed at the form its input already has. The one place the two
+// representations meet is the APR division in lib/finance.js.
+//
+// No decimal places. A utilisation is a rough position, not a measurement:
+// "42%" is the whole of what someone does with it, and "41.7%" implies a
+// precision that a balance changing daily does not have.
+const RATIO = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
+
 // A due date, as a day someone would say out loud.
 //
 // ---------------------------------------------------------------------------
@@ -105,7 +127,21 @@ export function formatPercent(value) {
   return PERCENT.format(rate);
 }
 
-// null rather than the em dash the two above fall back to, and that difference
+// The em dash rather than null, matching the two above rather than formatDate.
+//
+// Callers that want to render nothing at all already have a cleaner way to know
+// that: the finance functions return null for a card with no usable credit
+// limit, so the check happens before the value ever reaches a formatter. By the
+// time something is being formatted, the intent is to show it — so the fallback
+// here is for the case where a number was expected and turned out not to be
+// one, which is exactly what "—" says.
+export function formatRatio(value) {
+  const ratio = Number(value);
+  if (!Number.isFinite(ratio)) return MISSING;
+  return RATIO.format(ratio);
+}
+
+// null rather than the em dash the three above fall back to, and that difference
 // is deliberate. A card without a balance would be a card missing something it
 // is supposed to have, which is worth marking; a card without a due date is
 // simply a card nobody has entered a due date for. The caller renders nothing

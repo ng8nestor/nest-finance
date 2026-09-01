@@ -187,6 +187,27 @@
   --dur-fast: 120ms;
   --dur-base: 200ms;
   --dur-slow: 320ms;
+
+  /* A fourth duration, an order of magnitude longer than the other three, and
+     deliberately not part of the same series. The three above are interface
+     timings — how long the UI takes to acknowledge you. This one belongs to a
+     single piece of content: the count-up on the dashboard's bleed meter,
+     where the movement is not feedback about an interaction but the thing
+     being said. Watching the monthly figure climb from nothing is what makes
+     it land as money accumulating rather than as a number that was already
+     there.
+
+     1200ms is long enough to read as counting rather than as a flicker, and
+     short enough that the settled figure is on screen before anyone has
+     finished reading the label above it. It is used exactly once in the app.
+
+     It lives here rather than as a constant in the component because it is a
+     motion decision, and every other motion decision is on this page.
+     hooks/useCountUp.js reads it back out of the cascade at run time, along
+     with --ease below, so the curve and the duration have one definition
+     shared by CSS transitions and by the one animation JavaScript drives. */
+  --dur-count: 1200ms;
+
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
