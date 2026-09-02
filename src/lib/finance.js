@@ -313,6 +313,26 @@ export function isUtilizationHigh(ratio) {
 // anyone asks why one of two identical-looking cards is above the other.
 // ---------------------------------------------------------------------------
 
+// The two payoff strategies, as the ids the rest of the app passes around.
+//
+// These moved down here from lib/payoff.js when the simulator arrived, and the
+// move is worth a note because the ids read like vocabulary rather than
+// arithmetic. The reason is dependency direction: simulatePayoff below has to
+// pick a target card each month "by the active strategy", which means this file
+// now needs to map an id to one of the two orders directly beneath it. Reaching
+// up to payoff.js for the ids would make the two modules import each other —
+// and the alternative, writing the literal "snowball" in an if-statement here
+// while payoff.js holds the constant, is exactly the drift that having a
+// constant was meant to prevent.
+//
+// So the id lives beside the sort it names, and lib/payoff.js re-exports both.
+// Nothing else changed: every component still asks payoff.js what the
+// strategies are, because that is still the module that answers questions
+// about strategies — which one is the default, how many cards make an order
+// worth showing, whether a string off localStorage is one of them.
+export const AVALANCHE = "avalanche";
+export const SNOWBALL = "snowball";
+
 const ASCENDING = 1;
 const DESCENDING = -1;
 
@@ -410,4 +430,327 @@ export function aprHeat(card, cards) {
   if (lowest === null || highest === lowest) return 1;
 
   return (apr - lowest) / (highest - lowest);
+}
+
+// ---------------------------------------------------------------------------
+// Payoff simulation
+//
+// Everything above this line describes where someone is standing. This part
+// answers the other question — when does it end, and what does getting there
+// cost — and it is the only thing in the file that iterates.
+//
+// It is a simulation rather than a formula, and that is a deliberate choice
+// rather than a shortcut not taken. There is a closed-form expression for the
+// number of months it takes to clear a *single* balance at a fixed payment,
+// and it is genuinely exact. It is also useless here, because the thing being
+// modelled is not one balance: it is a set of them, where the payment on each
+// depends on which ones are still alive, the target switches the moment a card
+// hits zero, and the freed-up minimum from that card lands on the next one.
+// Those are discrete events, one per month, and a formula that assumed them
+// away would be answering an easier question very precisely.
+//
+// So the loop below is the specification, not an implementation of one. Each
+// month happens the way a month happens.
+//
+// ---------------------------------------------------------------------------
+// Rounding
+//
+// Every amount is passed through toCents at the moment it becomes an amount —
+// after the interest multiplication, after each subtraction, on every running
+// total. That is not defensive habit. A payoff runs sixty to four hundred
+// iterations, each with a multiplication by a rate like 0.0208333…, and the
+// binary-float residue from an unrounded pass compounds across them: totals
+// drift into digits that do not exist in dollars, a balance lands on
+// 0.0000000001 instead of zero and the card is never cleared, and the loop
+// runs to its cap on a debt that was actually paid off. Rounding at each step
+// keeps every intermediate value a real dollars-and-cents figure, which is
+// also what makes the total interest agree with a column of monthly figures
+// someone adds up by hand.
+// ---------------------------------------------------------------------------
+
+// The backstop, not the guard.
+//
+// The real protection against an endless loop is the arithmetic check below —
+// it recognises the non-terminating case up front and says so in the result,
+// which is a thing the screen can explain to a person. This is the second line
+// of defence behind it: if some input gets past that check and still fails to
+// converge, the loop stops here rather than hanging the tab.
+//
+// Fifty years. Far past any real payoff — the slowest plausible one is fifteen
+// or twenty — so it can only be reached by a case the guard failed to catch,
+// which is exactly when a backstop should fire. Reaching it is reported as a
+// debt that does not clear, because from the reader's point of view that is
+// what a payoff beyond half a century is.
+const MAX_SIMULATED_MONTHS = 600;
+
+// The cards as the loop needs them: mutable working copies, with the monthly
+// rate worked out once instead of on every iteration.
+//
+// Null if any row is unusable, matching totalMonthlyBleed rather than aprHeat.
+// The same reasoning applies and applies harder here: a payoff date computed
+// from a subset of someone's debt is not a slightly optimistic date, it is a
+// date for a different debt, and nothing on screen would say which cards it
+// left out.
+//
+// The keys `id`, `balance` and `apr_pct` are named to match the card rows on
+// purpose — avalancheOrder and snowballOrder read exactly those three, so the
+// comparators sort these working copies without a translation step, and the
+// order the simulation follows is the same order the list on screen is in.
+function toSimulationCards(cards) {
+  if (!Array.isArray(cards) || cards.length === 0) return null;
+
+  const debts = [];
+
+  for (const card of cards) {
+    const balance = toFinite(card?.balance);
+    const apr = toFinite(card?.apr_pct);
+    const minimum = toFinite(card?.min_due);
+
+    if (balance === null || apr === null || minimum === null) return null;
+
+    // Negative money is not a state this simulates. The schema forbids all
+    // three, so this is the form-and-tests branch — and a negative balance
+    // would otherwise "clear" instantly and drag the payoff date backwards.
+    if (balance < 0 || apr < 0 || minimum < 0) return null;
+
+    debts.push({
+      id: card?.id,
+      apr_pct: apr,
+      balance: toCents(balance),
+      minimum: toCents(minimum),
+      // The one division by 100, reached the same way monthlyInterest reaches
+      // it. Held as a fraction per month because the loop multiplies by it
+      // once per card per month and the conversion is not a per-iteration fact.
+      rate: apr / PERCENT_PER_WHOLE / MONTHS_PER_YEAR,
+    });
+  }
+
+  return debts;
+}
+
+// The cards in the order the chosen strategy pays them, over whatever is left.
+//
+// Avalanche is the else branch, exactly as in orderCards in lib/payoff.js: an
+// unrecognised strategy simulates the cheaper order rather than throwing. The
+// two functions agree because they are the same decision, and they have to —
+// a simulation that paid the cards down in a different order from the list on
+// screen would be a projection of a plan nobody is following.
+function orderedBy(debts, strategy) {
+  return strategy === SNOWBALL ? snowballOrder(debts) : avalancheOrder(debts);
+}
+
+// A calendar month, `months` from now, as the first of that month.
+//
+// The first rather than today's day-of-month, because the simulation has no
+// day in it. It counts whole months, so the honest output is a month — and
+// formatMonth in lib/format.js renders it as one ("March 2029"). Anchoring to
+// the 1st also sidesteps the classic overflow: January 31st plus one month is
+// March 3rd in JavaScript, which would be a payoff date in the wrong month.
+//
+// Local parts in, UTC date out. getFullYear/getMonth read the month the person
+// is actually living in, and Date.UTC pins the result to midnight UTC so the
+// formatter — which is fixed to UTC, see the note in lib/format.js — prints
+// back the same month it was given, in every timezone.
+function monthsFromNow(today, months) {
+  const start = today instanceof Date ? today : new Date(today);
+  if (Number.isNaN(start.getTime())) return null;
+
+  return new Date(Date.UTC(start.getFullYear(), start.getMonth() + months, 1));
+}
+
+// The result for a debt that never clears.
+//
+// A shape, not a null and not a throw. Null is already this file's word for
+// "we could not work it out", and this is the opposite of that: it is a
+// definite, computed finding — the payments do not cover the interest — and it
+// is the single most important thing the simulator can tell someone. It comes
+// back as a result with `clears: false` so the screen can say it in words.
+//
+// Every figure alongside it is null rather than 0 or Infinity. There is no
+// payoff date, so there is no date; the total interest is unbounded, so it is
+// not a number. `balances` is empty for the same reason: charting the balance
+// climbing would need a horizon to stop at, and any horizon this file picked
+// would be an invention. The line simply is not drawn, and the sentence
+// explains why — see components/PayoffSimulator.jsx.
+function neverClears() {
+  return {
+    clears: false,
+    months: null,
+    totalInterest: null,
+    payoffDate: null,
+    balances: [],
+  };
+}
+
+// Sum a field across the working cards, to the cent.
+function totalOf(debts, read) {
+  let total = 0;
+  for (const debt of debts) total += read(debt);
+  return toCents(total);
+}
+
+// Paying this debt down, month by month, at this extra payment, in this order.
+//
+// Returns null when the cards cannot be simulated at all — an unusable row, an
+// empty list, a negative extra payment — keeping the file's one meaning for
+// null. Everything else comes back as a result object:
+//
+//   clears        whether the debt is ever paid off at all
+//   months        whole months until the last balance hits zero
+//   totalInterest every cent of interest paid on the way there
+//   payoffDate    the month that lands in, as a Date
+//   balances      the total owed at the end of each month, for the chart —
+//                 index 0 is today, so its length is months + 1
+//
+// `today` is a parameter with a default rather than a call to new Date() in
+// the body, which is what keeps this function pure in the sense the rest of
+// the file is: called with a date it is deterministic and testable, and the
+// default is a convenience for the screen, which always means now.
+export function simulatePayoff(cards, extraPayment, strategy, today = new Date()) {
+  const debts = toSimulationCards(cards);
+  if (debts === null) return null;
+
+  const extra = toFinite(extraPayment);
+  if (extra === null || extra < 0) return null;
+
+  const monthlyExtra = toCents(extra);
+
+  // Owed right now. This is index 0 of the chart series — the point every line
+  // starts from — and the value the terminating check is made against.
+  let owed = totalOf(debts, (debt) => debt.balance);
+  const balances = [owed];
+
+  // Nothing owed is not a degenerate case to reject: it is a debt that is
+  // already paid, and zero months is the true answer. Returning early also
+  // keeps it away from the guard below, which would otherwise read "no
+  // payments, no interest" as a debt that never clears.
+  if (owed === 0) {
+    return {
+      clears: true,
+      months: 0,
+      totalInterest: 0,
+      payoffDate: monthsFromNow(today, 0),
+      balances,
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // The guard: does this debt clear at all?
+  //
+  // Every month, the same amount goes out — the sum of every minimum, plus
+  // the extra. That total does not fall as cards are cleared, because a
+  // cleared card's minimum is not saved, it is rolled onto the next card
+  // (step 3 in the loop). So the payment is a constant, and the question is
+  // only whether it beats the interest.
+  //
+  // If it does not, the balance ends every month higher than it started, next
+  // month's interest is therefore larger, and the gap widens forever. No cap
+  // and no amount of patience changes that, which is why this is checked
+  // before the loop rather than discovered by it.
+  //
+  // If it does, termination is guaranteed: the balance strictly falls, so
+  // interest falls with it, so the margin between payment and interest only
+  // grows. The loop below cannot fail to end.
+  //
+  // Strictly greater, so a payment exactly equal to the interest counts as
+  // never clearing — because it is. The balance would sit unchanged forever.
+  // ---------------------------------------------------------------------
+  const committed = toCents(totalOf(debts, (debt) => debt.minimum) + monthlyExtra);
+  const firstInterest = totalOf(debts, (debt) => toCents(debt.balance * debt.rate));
+
+  if (committed <= firstInterest) return neverClears();
+
+  let months = 0;
+  let totalInterest = 0;
+
+  // One pass per month, until nothing is owed. `owed` is recomputed from the
+  // cards at the end of each pass, so the condition is reading the same total
+  // the chart is drawn from rather than a separate tally that could disagree.
+  while (owed > 0 && months < MAX_SIMULATED_MONTHS) {
+    months += 1;
+
+    // -- 1. Interest, before anything is paid ----------------------------
+    // Interest first, because that is the order it happens in: the month's
+    // charge lands on the balance and the payment arrives against the total
+    // that includes it. Paying first and charging interest on the remainder
+    // would quietly understate every figure this function returns.
+    for (const debt of debts) {
+      if (debt.balance <= 0) continue;
+
+      const interest = toCents(debt.balance * debt.rate);
+      debt.balance = toCents(debt.balance + interest);
+      totalInterest = toCents(totalInterest + interest);
+    }
+
+    // -- 2 & 3. Minimums, and the pool -----------------------------------
+    // The pool starts as the extra payment and collects everything not spent
+    // on a minimum. Three things feed it, and they are the same thing seen
+    // from three angles: money committed to this debt that no minimum needs.
+    let pool = monthlyExtra;
+
+    for (const debt of debts) {
+      // A card with a balance takes its minimum — but no more than it owes.
+      // Capping at the balance is what stops a $50 minimum from being paid
+      // into a $12 balance and losing the other $38; the remainder falls
+      // through to the pool below, where it goes to work on the target.
+      const due = Math.min(debt.minimum, Math.max(debt.balance, 0));
+
+      if (due > 0) debt.balance = toCents(debt.balance - due);
+
+      // Step 3, and the engine of the whole method: whatever this card did
+      // not need of its minimum joins the pool. For a card cleared in an
+      // earlier month that is the entire minimum — it is done, and the money
+      // that used to hold it steady now goes at the next card instead. This
+      // is why a payoff accelerates rather than running at a constant rate,
+      // and it is a single subtraction.
+      pool = toCents(pool + (debt.minimum - due));
+    }
+
+    // -- 4. The pool, onto the target ------------------------------------
+    // The order is recomputed every month, over the cards that still have a
+    // balance, because the strategy is a rule and not a fixed queue: under
+    // snowball the smallest balance changes hands as cards shrink, and a
+    // queue frozen at month one would stop matching the order shown on the
+    // dashboard.
+    const remaining = orderedBy(
+      debts.filter((debt) => debt.balance > 0),
+      strategy,
+    );
+
+    // The whole pool goes at the first card in that order — the single target
+    // — and the loop is here for one reason: the pool can be larger than the
+    // target's balance. When it is, the card is cleared and the remainder
+    // moves to the next card in the same order, in the same month, rather
+    // than being paid into a zero balance and lost. Nobody sends a bank $900
+    // to settle $300 and shrugs at the change.
+    for (const debt of remaining) {
+      if (pool <= 0) break;
+
+      const payment = Math.min(pool, debt.balance);
+      debt.balance = toCents(debt.balance - payment);
+      pool = toCents(pool - payment);
+    }
+
+    // -- The month, recorded ---------------------------------------------
+    // One point per month for the chart, and the loop's own condition. A card
+    // that reached zero this month is simply a card with no balance from here
+    // on: nothing removes it from the array, because its minimum is still
+    // needed by step 3 above every month for the rest of the run.
+    owed = totalOf(debts, (debt) => debt.balance);
+    balances.push(owed);
+  }
+
+  // Falling out of the loop still owing something means the backstop fired,
+  // not that the debt was paid. Reported as a debt that does not clear: after
+  // fifty years the distinction between "never" and "not in any timeframe
+  // worth showing" is not one a person needs drawn for them.
+  if (owed > 0) return neverClears();
+
+  return {
+    clears: true,
+    months,
+    totalInterest,
+    payoffDate: monthsFromNow(today, months),
+    balances,
+  };
 }
