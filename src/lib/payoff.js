@@ -1,4 +1,9 @@
-import { avalancheOrder, snowballOrder } from "./finance.js";
+import {
+  AVALANCHE,
+  SNOWBALL,
+  avalancheOrder,
+  snowballOrder,
+} from "./finance.js";
 
 // ===========================================================================
 // Which payoff order is selected, as a value the whole app agrees on.
@@ -9,15 +14,27 @@ import { avalancheOrder, snowballOrder } from "./finance.js";
 // copy of the pair — a string in a radio's value, a different string in a
 // stored key, a third in an if-statement — and the day a third strategy
 // arrives, or one is renamed, two of the three would be updated. Hence one
-// module: the ids, the guard, and the mapping from an id to the sort.
+// module: the ids, the guard, and the mapping from an id to the sort — the ids
+// themselves now re-exported from lib/finance.js, for the reason given below.
 //
 // The labels are not here. "Avalanche" and "Snowball" are words on a button,
 // and words on a button belong to the component that draws it — the same split
 // lib/finance.js and lib/format.js keep between a number and its rendering.
 // ===========================================================================
 
-export const AVALANCHE = "avalanche";
-export const SNOWBALL = "snowball";
+// The two ids, re-exported rather than declared.
+//
+// They are defined in lib/finance.js, beside the two sort functions they name,
+// because simulatePayoff there has to map an id to an order and this module
+// already imports from that one — declaring them here as well would either
+// make the two files import each other or leave the literal "snowball" written
+// in both.
+//
+// Re-exported because this is still the module the app asks about strategies:
+// every component imports the pair from here, alongside the default and the
+// guard, and none of them should have to know that the ids happen to live one
+// layer down with the arithmetic.
+export { AVALANCHE, SNOWBALL };
 
 // Highest interest rate first. The default because it is the one that costs
 // less, and a default that quietly costs someone money is not a neutral

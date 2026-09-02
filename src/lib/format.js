@@ -155,3 +155,64 @@ export function formatDate(value) {
 
   return DATE.format(day);
 }
+
+// A month, as a month — "March 2029".
+//
+// The payoff simulator counts whole months and has no day in it, so this is
+// the whole of what simulatePayoff knows. formatDate would render the same
+// Date as "Mar 1, 2029", which is a day, and a day is a claim: it would tell
+// someone their debt clears on a Thursday, when what was computed is the
+// month it lands in. The precision has to match the arithmetic that produced
+// it, and a payoff four years out is a month at best.
+//
+// Long month rather than short. The figure it labels is a small one, printed
+// once, in a place someone stops to read, and "March 2029" is how it would be
+// said out loud — the abbreviation on a card's due date is there to fit a
+// column of them, which this is not.
+//
+// UTC for the same reason as the formatter above, and it is load-bearing here
+// rather than defensive: simulatePayoff builds its date with Date.UTC, so the
+// only reading that returns the month it was given is a UTC one. Left on the
+// local zone, everyone west of Greenwich would see the previous month.
+const MONTH = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+
+// Money with the middle digits taken out — "$12K".
+//
+// For the axis of the payoff chart and nothing else. An axis is a scale, not a
+// figure: it exists so a line can be read against it, and "$12,480.00" repeated
+// six times down the side of a chart is six times the ink for a precision
+// nobody is reading off it. Every exact number in that panel is printed as
+// text, in full, beside the chart.
+//
+// notation: "compact" is Intl's own answer, so the thresholds and the letters
+// come from the locale rather than from a hand-rolled divide-by-a-thousand.
+const COMPACT_CURRENCY = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
+// null rather than the em dash, matching formatDate: both of these take a date
+// that a caller is expected to have checked for, and both leave "render
+// nothing at all" available as the answer. simulatePayoff returns a null
+// payoffDate for a debt that never clears, and the screen has a sentence for
+// that case rather than a dash where a date would go.
+export function formatMonth(value) {
+  if (!value) return null;
+
+  const month = new Date(value);
+  if (Number.isNaN(month.getTime())) return null;
+
+  return MONTH.format(month);
+}
+
+export function formatCompactCurrency(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return MISSING;
+  return COMPACT_CURRENCY.format(amount);
+}

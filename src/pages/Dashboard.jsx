@@ -4,6 +4,7 @@ import { useCards } from "../hooks/useCards.js";
 import DebtCommandCenter from "../components/DebtCommandCenter.jsx";
 import PayoffStrategy from "../components/PayoffStrategy.jsx";
 import CardList from "../components/CardList.jsx";
+import PayoffSimulator from "../components/PayoffSimulator.jsx";
 import { usePayoffStrategy } from "../hooks/usePayoffStrategy.js";
 import { orderCards } from "../lib/payoff.js";
 import { SITE_NAME } from "../lib/site.js";
@@ -117,6 +118,23 @@ function Dashboard() {
         onCreate={create}
         onUpdate={update}
         onDelete={remove}
+      />
+
+      {/* Below the list, because it is the only thing on this page that is not
+          a fact. The panels above report what is true — what the debt costs,
+          what the cards are, which order to pay them in — and this one asks a
+          question about it, which is a thing to do after reading them rather
+          than instead of it.
+
+          It takes the strategy but not a setter: the choice is made once, by
+          the control above, and a second place to change it would be two
+          controls for one preference. The extra payment it does own is state
+          of its own — see the component on why that one is not lifted. */}
+      <PayoffSimulator
+        cards={cards}
+        loading={loading}
+        error={cardsError}
+        strategy={strategy}
       />
 
       <section className="dashboard__panel">
