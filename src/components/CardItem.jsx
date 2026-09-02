@@ -13,6 +13,13 @@ import {
 
 // One card in the list: what it holds, and the two things you can do to it.
 //
+// `rank` and `heat` both come from the parent and neither is computed here.
+// The rank is this card's place in the selected payoff order, which only the
+// list knows; the heat is where its APR sits among every card's, which only
+// the list can compare. Both arrive null when there is nothing to say — too
+// few cards for an order, or a rate that cannot be read — and both are simply
+// not drawn in that case.
+//
 // Editing is not handled here. The parent swaps this component out for a
 // <CardForm> when a card is being edited, so there is one form on the page at a
 // time and this component stays what it looks like — a card being displayed.
@@ -56,7 +63,7 @@ function Figure({ label, value, tone }) {
   );
 }
 
-function CardItem({ card, onEdit, onDelete }) {
+function CardItem({ card, rank, heat, onEdit, onDelete }) {
   // null when the card has no due date, which is the normal state of a card
   // nobody has entered one for. The <Figure> below is skipped entirely in that
   // case: no row, no label, no dash. A placeholder would put an empty promise
@@ -110,10 +117,45 @@ function CardItem({ card, onEdit, onDelete }) {
   return (
     <li className="card">
       <div className="card__heading">
-        <h3 className="card__name">{card.name}</h3>
-        {/* Only rendered when there is one. An empty line under the name would
-            reserve space for a fact this card doesn't have. */}
-        {card.issuer && <p className="card__issuer">{card.issuer}</p>}
+        {/* The payoff rank, and the card's APR read as a temperature.
+
+            Two facts in one badge because they are two halves of one question
+            — which card to pay, and how much this one is costing to leave
+            alone — and because a card with a rank chip and a separate heat
+            swatch would be two decorations competing for the same corner.
+
+            The number is stated in words for anyone not reading the colour,
+            and the colour is never the only thing saying anything: the rank is
+            a digit, and the rate it shades is printed in full among the
+            figures below. Someone who cannot tell the shades apart loses
+            nothing but the glance. */}
+        {rank !== null && rank !== undefined && (
+          <p
+            className="card__rank"
+            // The heat as a bare number, for the stylesheet to turn into an
+            // opacity — the same division of labour the utilisation bar uses
+            // for its width. A string rather than a number because React
+            // appends "px" to numeric style values for properties it does not
+            // recognise as unitless.
+            //
+            // Left unset when the APR cannot be read, so the rule's own
+            // default takes over and the badge draws cold rather than
+            // inventing a temperature for a rate nobody knows.
+            style={heat === null ? undefined : { "--heat": String(heat) }}
+          >
+            <span className="card__rank-mark" aria-hidden="true">
+              {rank}
+            </span>
+            <span className="card__rank-label">Number {rank} to pay off</span>
+          </p>
+        )}
+
+        <div className="card__titles">
+          <h3 className="card__name">{card.name}</h3>
+          {/* Only rendered when there is one. An empty line under the name would
+              reserve space for a fact this card doesn't have. */}
+          {card.issuer && <p className="card__issuer">{card.issuer}</p>}
+        </div>
       </div>
 
       {/* The one thing on a card that changes what someone should do rather

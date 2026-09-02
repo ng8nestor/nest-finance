@@ -184,10 +184,120 @@
   border-radius: var(--radius-md);
 }
 
+/* The rank badge and the name, side by side. The badge is a fixed shape and
+   the titles take the rest, so a long card name wraps under itself rather than
+   under the number. */
 .card__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.card__titles {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  /* A flex child will not shrink below its content by default, so without this
+     a long unbroken card name pushes the badge off the card instead of
+     wrapping. */
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   The payoff rank, heat-coded by APR
+   ---------------------------------------------------------------------------
+
+   One badge carrying two things: the number is where this card sits in the
+   selected payoff order, and the warmth is where its APR sits among every card
+   the person holds. See the note in CardList.jsx on why those are two facts and
+   not one — under snowball they deliberately disagree.
+
+   --heat arrives from the component as a bare fraction, 0 for the mildest rate
+   on the account and 1 for the worst. Turning it into a colour happens here,
+   for the same reason the utilisation bar's width does: the component's job
+   ends at the ratio, and a stylesheet is the thing that draws.
+
+   No new colour. --debt at varying strength, which is the token for money owed
+   and exactly what a rate is a measure of — mixing toward transparent rather
+   than toward a second hue means a cool card is less of the same statement, not
+   a different one. */
+
+.card__rank {
+  /* The default, used when the component passes no heat because the APR could
+     not be read. Coldest, so an unknown rate never draws attention it has not
+     earned. */
+  --heat: 0;
+
+  /* The band the heat is drawn across, as a share of --debt.
+
+     Neither end is an extreme, and both ends are chosen by contrast rather than
+     by taste. The floor is not 0 because the mildest rate on the account is
+     still a rate, and a badge mixed all the way to transparent would read as an
+     empty circle rather than a cool one. The ceiling is not 100% because the
+     rank sits on top of this in --text: at full --debt that pairing falls to
+     about 2.4:1, well under the 4.5:1 a small figure needs, and the number on
+     the hottest card — the one the whole feature exists to point at — would be
+     the hardest one to read. At 55% it stays above 5:1 on the card's surface.
+
+     The ring carries the rest of the range instead. Nothing is printed on it,
+     so it can run to full strength, and it is what makes the worst card read as
+     hot rather than merely warm. */
+  --heat-floor: 12%;
+  --heat-span: 43%;
+  --ring-floor: 24%;
+  --ring-span: 76%;
+
+  /* Never squeezed by the name beside it, and circular until the ranks reach
+     double digits, at which point the padding lets it grow into a pill rather
+     than clipping the second digit. */
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: var(--space-6);
+  height: var(--space-6);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-full);
+
+  background: color-mix(
+    in srgb,
+    var(--debt) calc(var(--heat-floor) + var(--heat) * var(--heat-span)),
+    transparent
+  );
+  border: var(--border-width) solid
+    color-mix(
+      in srgb,
+      var(--debt) calc(var(--ring-floor) + var(--heat) * var(--ring-span)),
+      transparent
+    );
+}
+
+/* The mono face, like every other figure on the card, so a column of ranks
+   down the list lines up with itself. */
+.card__rank-mark {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 500;
+  /* Full strength, not the badge's colour. The tint behind it is the variable;
+     the digit is a fact and reads the same on every card. */
+  color: var(--text);
+}
+
+/* The rank in words, for assistive technology, which has no way to read a
+   position from a shade or a bare digit floating beside a heading. The digit
+   above is aria-hidden and this is announced instead — the same split the
+   bleed meter makes between its animated figure and its settled one, and the
+   same technique, which is why the values below are its constants rather than
+   design ones. */
+.card__rank-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .card__name {

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import CardForm from "./CardForm.jsx";
 import CardItem from "./CardItem.jsx";
+import { aprHeat } from "../lib/finance.js";
+import { RANKABLE_MINIMUM } from "../lib/payoff.js";
 import "./Cards.css";
 
 // ===========================================================================
@@ -40,6 +42,21 @@ import "./Cards.css";
 //
 // The same distinction ProtectedRoute draws between "don't know yet" and
 // "nobody", one layer down.
+//
+// ---------------------------------------------------------------------------
+// The order, and the two things drawn from it
+//
+// This section does not sort. The array arrives in the order the selected
+// payoff strategy puts it in — the page owns that choice because the toggle
+// above the list shows it too — so a card's position here *is* its payoff
+// rank, and the rank passed to each card is simply where it sits.
+//
+// That is deliberately not the same thing as its heat. The rank comes from the
+// order; the heat comes from the APR, whichever order is selected. Under
+// snowball they visibly disagree, and that disagreement is the honest picture:
+// the expensive card glowing three rows down is exactly what snowball costs
+// you, and hiding it by shading the list top-to-bottom would turn the colour
+// into a second copy of the rank rather than a fact about the rate.
 // ===========================================================================
 
 function CardList({
@@ -162,7 +179,7 @@ function CardList({
 
       {!loading && cards.length > 0 && (
         <ul className="cards__list">
-          {cards.map((card) =>
+          {cards.map((card, index) =>
             // The edit form takes the card's place in the list rather than
             // opening above or below it, so the thing being edited stays where
             // the eye left it.
@@ -178,6 +195,17 @@ function CardList({
               <CardItem
                 key={card.id}
                 card={card}
+                // Position in the list, one-based, and null when there are too
+                // few cards for an order to mean anything — the same threshold
+                // that decides whether the toggle above is on screen at all,
+                // from the same constant, so a card can never be numbered by a
+                // control the reader cannot see.
+                rank={cards.length < RANKABLE_MINIMUM ? null : index + 1}
+                // Computed against the whole list rather than passed down from
+                // the page, because it is a fact about this card among these
+                // cards. lib/finance.js does the arithmetic; this hands it the
+                // set to compare against.
+                heat={aprHeat(card, cards)}
                 onEdit={startEditing}
                 onDelete={onDelete}
               />
