@@ -275,3 +275,139 @@ export function isUtilizationHigh(ratio) {
 
   return ratio > UTILIZATION_THRESHOLD;
 }
+
+// ---------------------------------------------------------------------------
+// Payoff order
+//
+// Two ways to sequence the same debts, and the only two this app offers.
+// Avalanche pays the highest interest rate first, which costs the least in
+// total interest. Snowball pays the smallest balance first, which clears whole
+// cards soonest. Neither is a calculation about money — no figure on screen
+// changes when the order does — so nothing below computes anything. They are
+// orderings, and they return the cards in one.
+//
+// Both copy before sorting. Array.prototype.sort mutates in place, and the
+// array these are handed is the one hooks/useCards.js is holding in state:
+// sorting it directly would rewrite React's own copy behind its back, so the
+// summary above the list and the list itself would be reading an array that
+// changed without a render. The spread is not a defensive habit here, it is
+// the difference between a pure function and a bug.
+//
+// ---------------------------------------------------------------------------
+// Why the tie-breaks go three deep
+//
+// Two cards at 24.99%, or two at $1,200.00, are a real and ordinary thing —
+// people carry cards from the same issuer on the same terms, and round-number
+// balances collide. A comparator that returns 0 for them leaves their relative
+// order to whatever the input order happened to be, and the input order is a
+// fetch away from changing: today it is created_at descending out of
+// lib/cards.js, tomorrow it is whatever the next query orders by. The ranks on
+// screen would silently swap between one load and the next, on a list whose
+// whole purpose is to say which card to pay first.
+//
+// So each comparator falls through to a second financial key, and then to the
+// id — which is unique, so the chain can never reach the end still undecided.
+// The second key is chosen to mean something rather than to merely break the
+// tie: at equal APRs the larger balance is accruing more, and at equal
+// balances the higher APR is costing more. The order stays defensible if
+// anyone asks why one of two identical-looking cards is above the other.
+// ---------------------------------------------------------------------------
+
+const ASCENDING = 1;
+const DESCENDING = -1;
+
+// One comparison between two values that may be null, in either direction.
+//
+// Nulls sort last both ways, which is why the direction is applied to the
+// difference rather than to the whole result. A card with an unusable APR
+// cannot be placed by APR, and the bottom of the list is the honest place for
+// it: sorting it to the top under a "pay this first" heading would be an
+// instruction derived from a value we do not have. The columns behind these
+// are NOT NULL in the schema, so this is the defensive branch — but these
+// functions are also handed rows straight out of a form, before any database
+// has checked them.
+function compareValues(left, right, direction) {
+  if (left === null && right === null) return 0;
+  if (left === null) return 1;
+  if (right === null) return -1;
+
+  return (left - right) * direction;
+}
+
+// The last resort, and the reason the order is stable across loads. Ids are
+// uuids: arbitrary as an ordering, but unique, which is the only property
+// being asked of them here.
+function compareIds(left, right) {
+  const a = String(left?.id ?? "");
+  const b = String(right?.id ?? "");
+
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+// Highest APR first — the cheapest way out, in total interest paid.
+export function avalancheOrder(cards) {
+  if (!Array.isArray(cards)) return [];
+
+  return [...cards].sort(
+    (a, b) =>
+      compareValues(toFinite(a?.apr_pct), toFinite(b?.apr_pct), DESCENDING) ||
+      compareValues(toFinite(a?.balance), toFinite(b?.balance), DESCENDING) ||
+      compareIds(a, b),
+  );
+}
+
+// Smallest balance first — the fastest way to have one fewer card.
+export function snowballOrder(cards) {
+  if (!Array.isArray(cards)) return [];
+
+  return [...cards].sort(
+    (a, b) =>
+      compareValues(toFinite(a?.balance), toFinite(b?.balance), ASCENDING) ||
+      compareValues(toFinite(a?.apr_pct), toFinite(b?.apr_pct), DESCENDING) ||
+      compareIds(a, b),
+  );
+}
+
+// Where one card's APR sits between the lowest and highest in the set, as a
+// fraction: 1 is the worst rate someone is carrying, 0 the best of a bad lot.
+//
+// It exists so the screen can shade a card by how expensive its rate is, and
+// it is deliberately relative rather than absolute. There is no such thing as
+// a hot APR in the abstract — the honest absolute scale would put 22%, 24% and
+// 25% at nearly the same shade, which is true and useless, since the question
+// a payoff list answers is "which of mine is worst", not "is this bad by
+// national standards". The APR itself is printed on every card for the
+// absolute answer.
+//
+// All-equal rates, and a set of one, come back as 1 rather than 0. With no
+// spread there is no cooler card to contrast with, and shading every card down
+// to nothing would say these rates are mild when what is actually true is that
+// they are all the same.
+//
+// Unusable rows on other cards are skipped instead of poisoning the result,
+// which is the opposite of what totalMonthlyBleed does with them — and for the
+// opposite reason. A total that quietly drops rows is a figure someone acts on
+// that is wrong by the amount it dropped. This is a shade, it sits beside the
+// rate it describes, and one unreadable neighbour is no reason to stop
+// colouring the rest.
+export function aprHeat(card, cards) {
+  const apr = toFinite(card?.apr_pct);
+
+  if (apr === null || !Array.isArray(cards)) return null;
+
+  let lowest = null;
+  let highest = null;
+
+  for (const other of cards) {
+    const rate = toFinite(other?.apr_pct);
+    if (rate === null) continue;
+
+    if (lowest === null || rate < lowest) lowest = rate;
+    if (highest === null || rate > highest) highest = rate;
+  }
+
+  if (lowest === null || highest === lowest) return 1;
+
+  return (apr - lowest) / (highest - lowest);
+}

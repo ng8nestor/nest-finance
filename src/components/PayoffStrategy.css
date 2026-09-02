@@ -1,0 +1,164 @@
+/* The payoff order control: a two-option segmented toggle and the sentence
+   under it. Tokens only, same rule as every other stylesheet here.
+
+   Lighter than the panels it sits between, on purpose. The summary above and
+   the cards below are surfaces with borders because they hold content; this is
+   a control, and giving it the same treatment would make the page read as
+   three panels of equal weight instead of a number, a choice, and a list. */
+
+.payoff {
+  /* The dashboard column lays its children out at flex-start, which would
+     otherwise leave this only as wide as its longest line. */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* <fieldset> arrives with a border, padding, and a margin from the browser's
+   stylesheet, none of which the reset in index.css touches — it zeroes margins
+   on the elements it lists, and this is not one of them.
+
+   min-inline-size is the non-obvious one. A fieldset's default min-width is
+   min-content rather than 0, which means it refuses to shrink below its widest
+   child and pushes the page wider than the screen on a narrow phone instead of
+   letting the options wrap. */
+.payoff__choice {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+/* Set like the figure labels on a card and the headings in the summary: small,
+   uppercase, letterspaced, muted. It is the same kind of thing they are — a
+   name for what is underneath — and it should read as part of the same page
+   rather than as this component's own idea.
+
+   The margin rather than a flex gap because the fieldset is left as a block:
+   `display: flex` on a fieldset has a long history of rendering its legend
+   wrongly, and the layout gains nothing from it. */
+.payoff__legend {
+  padding: 0;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: var(--space-1);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.payoff__options {
+  display: flex;
+  /* Two across where there is room, stacked where there is not. */
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Both options the same width whatever their labels say. The basis is a
+   minimum rather than a target: below it the two wrap onto separate lines,
+   above it they share the row equally, so neither option is ever the bigger
+   button — which would read as a recommendation the control is not making. */
+.payoff__option {
+  flex: 1 1 calc(var(--space-9) * 1.5);
+}
+
+/* The radio itself, present and focusable but not drawn. Not display: none and
+   not visibility: hidden — both remove an input from the accessibility tree and
+   from the tab order, which would leave this control unusable by keyboard while
+   looking exactly the same.
+
+   These are the technique's own constants rather than design values, the same
+   ones .command-center__settled uses for the opposite purpose: a 1px box is the
+   smallest that reliably stays in the tree, and clip-path takes it out of view
+   without taking it out of the document. */
+.payoff__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.payoff__pill {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  /* Full height of the row, so two options with labels of different lengths
+     are the same size when one wraps and the other does not. */
+  height: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
+}
+
+.payoff__pill:hover {
+  background: var(--surface-2);
+}
+
+/* The focus ring, forwarded from the hidden input to the thing that is
+   actually on screen. The app-wide :focus-visible rule in index.css lands on
+   the input, and the input is a clipped 1px box, so without this a keyboard
+   user tabs onto this control and sees nothing at all.
+
+   The values are copied from that rule rather than shared, which is the one
+   duplication in this file. A custom property would be the tidy fix and would
+   also be the only one of its kind in the app; if a second component ever needs
+   the same forwarding, that is the moment to add it to tokens.css rather than
+   now. */
+.payoff__input:focus-visible + .payoff__pill {
+  outline: calc(var(--space-1) / 2) solid var(--info);
+  outline-offset: calc(var(--space-1) / 2);
+}
+
+/* The selected option. Three things change at once — the surface lifts a step,
+   the hairline brightens, and the name goes from secondary to full strength —
+   because any one of them alone is a difference someone can miss on a dark
+   screen at a glance. None of them is a hue, so the state does not depend on
+   telling two colours apart, and the radio underneath is announcing it in words
+   regardless. */
+.payoff__input:checked + .payoff__pill {
+  background: var(--surface-raised);
+  border-color: var(--text-muted);
+}
+
+.payoff__name {
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: color var(--dur-base) var(--ease);
+}
+
+.payoff__input:checked + .payoff__pill .payoff__name {
+  color: var(--text);
+}
+
+.payoff__gloss {
+  font-size: var(--text-caption);
+  /* Deliberately not lifted when checked. It describes what the sort does,
+     which is as true of the option nobody picked. */
+  color: var(--text-muted);
+}
+
+/* The tradeoff sentence. Secondary rather than muted: it is the only
+   explanation on the screen and someone reading this control for the first
+   time needs it, which is a different job from the glosses above — those are
+   reminders for someone who has already read this once. */
+.payoff__tradeoff {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  /* The line stops before the full width of the dashboard column. A sentence
+     running the whole way across a wide screen is measurably harder to read
+     back to the start of; this is roughly the 60-odd characters that is
+     comfortable. */
+  max-width: calc(var(--space-9) * 5);
+}

@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useAuth } from "../hooks/useAuth.js";
 import { useCards } from "../hooks/useCards.js";
 import DebtCommandCenter from "../components/DebtCommandCenter.jsx";
+import PayoffStrategy from "../components/PayoffStrategy.jsx";
 import CardList from "../components/CardList.jsx";
+import { usePayoffStrategy } from "../hooks/usePayoffStrategy.js";
+import { orderCards } from "../lib/payoff.js";
 import { SITE_NAME } from "../lib/site.js";
 import "./Dashboard.css";
 
@@ -33,6 +36,22 @@ function Dashboard() {
     update,
     remove,
   } = useCards();
+
+  // Which order the list is in, remembered between visits — see
+  // hooks/usePayoffStrategy.js for why that lives in localStorage rather than
+  // in a table. It is state on the page rather than inside either component
+  // below because both need it: the toggle shows it, and the list is sorted by
+  // it. Owning it here is what stops those two from being able to disagree.
+  const [strategy, setStrategy] = usePayoffStrategy();
+
+  // The same rows the summary is adding up, in payoff order. A copy — see the
+  // note in lib/finance.js on why neither sort touches the array the hook is
+  // holding.
+  //
+  // Only the list is given the ordered copy. The summary above totals every
+  // card and the order of a sum is not a thing, so handing it the sorted array
+  // would suggest it depended on something it does not.
+  const ordered = orderCards(cards, strategy);
 
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState(null);
@@ -78,8 +97,20 @@ function Dashboard() {
           both would be less true than either. */}
       <DebtCommandCenter cards={cards} loading={loading} error={cardsError} />
 
-      <CardList
+      {/* Between the two, because it belongs to both: it is a decision made
+          about the figure above and answered by the order of the list below.
+          It renders nothing until there are at least two cards to put in an
+          order — see the component. */}
+      <PayoffStrategy
         cards={cards}
+        loading={loading}
+        error={cardsError}
+        strategy={strategy}
+        onChange={setStrategy}
+      />
+
+      <CardList
+        cards={ordered}
         loading={loading}
         error={cardsError}
         onRetry={retry}
