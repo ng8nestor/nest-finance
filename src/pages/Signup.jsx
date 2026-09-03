@@ -67,7 +67,10 @@ function Signup() {
             We sent a confirmation link to <strong>{email}</strong>. Open it to
             finish setting up your account, then log in.
           </p>
-          <Link className="auth__secondary-action" to="/login">
+          <Link
+            className="button button--secondary auth__secondary-action"
+            to="/login"
+          >
             Go to log in
           </Link>
         </div>
@@ -99,7 +102,7 @@ function Signup() {
               Email
             </label>
             <input
-              className="auth__input"
+              className="input"
               id="signup-email"
               name="email"
               type="email"
@@ -116,7 +119,7 @@ function Signup() {
               Password
             </label>
             <input
-              className="auth__input"
+              className="input"
               id="signup-password"
               name="password"
               type="password"
@@ -141,7 +144,11 @@ function Signup() {
             </p>
           )}
 
-          <button className="auth__submit" type="submit" disabled={submitting}>
+          <button
+            className="button button--primary"
+            type="submit"
+            disabled={submitting}
+          >
             {submitting ? "Creating account…" : "Create account"}
           </button>
         </form>

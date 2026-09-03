@@ -5,7 +5,8 @@
    multiple of a token so it still moves if the scale changes. */
 
 .auth {
-  min-height: 100svh;
+  /* The viewport height is claimed by .app in index.css, which is the element
+     that actually is the viewport now that a header sits above this one. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,36 +60,11 @@
   color: var(--text-secondary);
 }
 
-.auth__input {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  background: var(--surface-2);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  /* Body size specifically, not label size: mobile Safari zooms the whole page
-     when a focused input's text is under 16px, and the zoom does not undo
-     itself when the field blurs. */
-  font-size: var(--text-body);
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease);
-}
-
-.auth__input:hover:not(:disabled) {
-  border-color: var(--text-muted);
-}
-
-/* The focus ring comes from the app-wide :focus-visible rule in index.css, so
-   there is nothing to add here — and nothing to remove, which is the usual way
-   keyboard navigation gets broken on a form. */
-
-.auth__input:disabled {
-  /* Fields go inert while a submit is in flight. Dimming rather than recolouring
-     keeps the token palette out of it — opacity is a state, not a colour. */
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* Both email fields and both password fields are .input from
+   styles/controls.css. This file used to hold a copy of that rule and
+   Cards.css held the other, byte for byte the same — including the note about
+   mobile Safari zooming a sub-16px field, which was true in both places and is
+   now written once. */
 
 .auth__hint {
   font-size: var(--text-caption);
@@ -113,32 +89,10 @@
   font-size: var(--text-label);
 }
 
-.auth__submit {
-  padding: var(--space-3) var(--space-5);
-  /* A transparent border of the same width as the inputs' keeps the button the
-     same height as them, so a stack of controls lines up. */
-  border: var(--border-width) solid transparent;
-  border-radius: var(--radius-sm);
-  /* --info is the token for neutral, non-financial UI signals, which is exactly
-     what a submit button is. The accents that carry money meaning stay reserved
-     for money. Text is --bg rather than white: the accent is a light blue, so
-     the dark page colour is what reads on top of it. */
-  background: var(--info);
-  color: var(--bg);
-  font-size: var(--text-label);
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease);
-}
-
-.auth__submit:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.auth__submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* The form's one action is .button .button--primary — the accent fill, for the
+   thing the page is asking for. It needs no rule of its own: it is the last
+   child of a stretch column, so it is already full width, which is the emphasis
+   a login screen's submit wants without a size written for it. */
 
 .auth__alt {
   font-size: var(--text-label);
@@ -155,23 +109,14 @@
   text-underline-offset: var(--space-1);
 }
 
-/* The quiet outlined button used on the "check your email" panel — the same
-   shape as the one on the 404 page, since both are "you are done here, go
-   there next" actions rather than the primary action of a form. */
+/* "Go to log in", on the "check your email" panel. .button .button--secondary,
+   the same quiet pill as the 404 page's way back and the landing page's log in
+   — all three are "you are done here, go there next" rather than the primary
+   action of a screen.
+
+   The alignment is the only thing this adds. The card is a stretch column, and
+   a button stretched across it would read as a form's submit on a panel that
+   has no form. */
 .auth__secondary-action {
   align-self: flex-start;
-  padding: var(--space-2) var(--space-5);
-  background: var(--surface-2);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-full);
-  font-size: var(--text-label);
-  font-weight: 600;
-  transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease);
-}
-
-.auth__secondary-action:hover {
-  background: var(--surface-raised);
-  border-color: var(--text-muted);
 }

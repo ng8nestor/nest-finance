@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CardForm from "./CardForm.jsx";
 import CardItem from "./CardItem.jsx";
 import { aprHeat } from "../lib/finance.js";
@@ -75,10 +75,61 @@ function CardList({
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  // The two writes that close a form when they succeed. The write itself
+  // -------------------------------------------------------------------------
+  // Where focus goes when a form closes
+  //
+  // Every control in this section that opens a form removes itself from the
+  // page in the act of doing it: "Add a card" is hidden while the add form is
+  // up, and an edited card is replaced wholesale by the form. So when the form
+  // closes there is nothing left holding a reference to the button that opened
+  // it — it is a different DOM node by then, freshly mounted.
+  //
+  // Hence a *name* rather than a ref: this records which control should take
+  // focus, and the thing that owns that control focuses it once it exists.
+  // { kind: "add" } is resolved here, because the add button is rendered here.
+  // { kind: "card", id } is resolved by the CardItem with that id, which is the
+  // only component that can hold a ref to its own Edit button.
+  //
+  // A fresh object every time, deliberately: two consecutive edits of the same
+  // card have to look like two different requests to the effect below, and
+  // { kind: "card", id } === { kind: "card", id } is false, which is exactly
+  // the behaviour wanted.
+  const [returnFocusTo, setReturnFocusTo] = useState(null);
+
+  // One ref, two buttons — the header's "Add a card" and the empty state's "Add
+  // your first card". They are the same action worded for two situations and
+  // are never on the page at the same time, so whichever is mounted is the one
+  // this points at, and "put focus back on the add control" needs no idea which
+  // of the two it is.
+  const addRef = useRef(null);
+
+  // Only the "add" kind is resolved here. The card kind is handled by the
+  // CardItem holding that id, which is the only component with a reference to
+  // its own Edit button.
+  //
+  // The request is never cleared, and does not need to be. This effect runs
+  // when `returnFocusTo` changes identity, and a new request is always a new
+  // object — so it fires exactly once per request and never again on an
+  // unrelated re-render. Clearing it would mean a setState inside an effect
+  // whose only purpose is to undo the render that just happened: a second pass
+  // through the whole section to write a value nothing draws. What is left
+  // behind is simply the last request made, which is a true statement about the
+  // component and a harmless one.
+  //
+  // Nothing happens if the target is not on the page — a card deleted from
+  // under a pending request, say. focus() is optional-chained, and that is the
+  // right failure: focus stays where the browser put it rather than jumping
+  // somewhere arbitrary.
+  useEffect(() => {
+    if (returnFocusTo?.kind === "add") addRef.current?.focus();
+  }, [returnFocusTo]);
+
+  // -------------------------------------------------------------------------
+  // The three writes that close a form when they succeed. The write itself
   // belongs to the page — the summary above recomputes from the same array —
-  // but "and then put the form away" is this section's business, so it is
-  // wrapped here rather than being something useCards() has to know about.
+  // but "and then put the form away, and put focus back" is this section's
+  // business, so it is wrapped here rather than being something useCards() has
+  // to know about.
   //
   // Each returns an error sentence for the form that asked, or null if it
   // worked. The form owns showing that message, since it belongs next to the
@@ -88,7 +139,7 @@ function CardList({
     const message = await onCreate(fields);
     if (message) return message;
 
-    setAdding(false);
+    closeAddForm();
     return null;
   }
 
@@ -96,10 +147,35 @@ function CardList({
     const message = await onUpdate(id, fields);
     if (message) return message;
 
-    setEditingId(null);
+    closeEditForm(id);
     return null;
   }
 
+  // Deleting has no form to close, but it does destroy the button that was
+  // focused — the Delete that was pressed goes with the card. There is no
+  // "control that opened this" to go back to, so focus lands on the section's
+  // own add control: the nearest thing still on screen, and the action someone
+  // is most likely to want next on a list they are curating.
+  async function handleDelete(id) {
+    const message = await onDelete(id);
+    if (message) return message;
+
+    setReturnFocusTo({ kind: "add" });
+    return null;
+  }
+
+  function closeAddForm() {
+    setAdding(false);
+    setReturnFocusTo({ kind: "add" });
+  }
+
+  function closeEditForm(id) {
+    setEditingId(null);
+    setReturnFocusTo({ kind: "card", id });
+  }
+
+  // Opening a form needs no focus request of its own: the form focuses its own
+  // first field on mount. See the note in CardForm.jsx.
   function startAdding() {
     setEditingId(null);
     setAdding(true);
@@ -123,7 +199,12 @@ function CardList({
             many. It also goes away while the form is open, since the form is
             the thing it opens. */}
         {!loading && !error && cards.length > 0 && !adding && (
-          <button className="cards__add" type="button" onClick={startAdding}>
+          <button
+            className="button button--secondary"
+            type="button"
+            ref={addRef}
+            onClick={startAdding}
+          >
             Add a card
           </button>
         )}
@@ -144,15 +225,17 @@ function CardList({
           {/* A dead end is what makes an error page feel broken. The failure
               here is usually momentary — a dropped connection, a slow
               round trip — so the fix is one button, not a page reload. */}
-          <button className="cards__retry" type="button" onClick={onRetry}>
+          <button
+            className="button button--secondary"
+            type="button"
+            onClick={onRetry}
+          >
             Try again
           </button>
         </div>
       )}
 
-      {adding && (
-        <CardForm onSubmit={handleCreate} onCancel={() => setAdding(false)} />
-      )}
+      {adding && <CardForm onSubmit={handleCreate} onCancel={closeAddForm} />}
 
       {/* The empty state. Not an apology, and not "no records found" — there is
           nothing wrong here. Someone has just signed up and has not told us
@@ -168,8 +251,9 @@ function CardList({
             everything you owe on it stays in one place.
           </p>
           <button
-            className="cards__empty-action"
+            className="button button--primary cards__empty-action"
             type="button"
+            ref={addRef}
             onClick={startAdding}
           >
             Add your first card
@@ -188,7 +272,7 @@ function CardList({
                 <CardForm
                   card={card}
                   onSubmit={(fields) => handleUpdate(card.id, fields)}
-                  onCancel={() => setEditingId(null)}
+                  onCancel={() => closeEditForm(card.id)}
                 />
               </li>
             ) : (
@@ -206,8 +290,14 @@ function CardList({
                 // cards. lib/finance.js does the arithmetic; this hands it the
                 // set to compare against.
                 heat={aprHeat(card, cards)}
+                // Whether this card should put focus back on its own Edit
+                // button as it mounts, because it is the card whose edit form
+                // just closed. See the note on returnFocusTo above.
+                restoreFocus={
+                  returnFocusTo?.kind === "card" && returnFocusTo.id === card.id
+                }
                 onEdit={startEditing}
-                onDelete={onDelete}
+                onDelete={handleDelete}
               />
             ),
           )}

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 // ===========================================================================
 // The form for adding a card and for editing one. Same fields, same rules, same
@@ -207,6 +207,26 @@ function CardForm({ card, onSubmit, onCancel }) {
   const formId = useId();
   const fieldId = (name) => `${formId}-${name}`;
 
+  // Opening this form is what moved focus off the button that opened it — that
+  // button unmounts as the form appears, and a browser has nowhere to put focus
+  // except back on <body>. From there the next Tab starts at the top of the
+  // document, so a keyboard user's reward for opening a form is a trip through
+  // the whole page to reach it.
+  //
+  // Focusing the first field is the answer rather than focusing the form
+  // element or its heading: the form was opened in order to type in it, and the
+  // first field is where typing starts. It also scrolls the form into view for
+  // everyone, which is worth having on a phone where an edit form opens well
+  // below the fold.
+  //
+  // Empty deps: on mount only. Re-running it would drag focus back to the name
+  // field mid-edit on any re-render, which is the opposite of helping.
+  const nameRef = useRef(null);
+
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
+
   function handleChange(name, value) {
     const next = { ...values, [name]: value };
     setValues(next);
@@ -264,7 +284,8 @@ function CardForm({ card, onSubmit, onCancel }) {
         {(props) => (
           <input
             {...props}
-            className="card-form__input"
+            ref={nameRef}
+            className="input"
             name="name"
             type="text"
             autoComplete="off"
@@ -284,7 +305,7 @@ function CardForm({ card, onSubmit, onCancel }) {
         {(props) => (
           <input
             {...props}
-            className="card-form__input"
+            className="input"
             name="issuer"
             type="text"
             autoComplete="off"
@@ -306,7 +327,7 @@ function CardForm({ card, onSubmit, onCancel }) {
           {(props) => (
             <input
               {...props}
-              className="card-form__input card-form__input--number"
+              className="input input--mono"
               name="balance"
               type="number"
               inputMode="decimal"
@@ -327,7 +348,7 @@ function CardForm({ card, onSubmit, onCancel }) {
           {(props) => (
             <input
               {...props}
-              className="card-form__input card-form__input--number"
+              className="input input--mono"
               name="credit_limit"
               type="number"
               inputMode="decimal"
@@ -353,7 +374,7 @@ function CardForm({ card, onSubmit, onCancel }) {
           {(props) => (
             <input
               {...props}
-              className="card-form__input card-form__input--number"
+              className="input input--mono"
               name="apr_pct"
               type="number"
               inputMode="decimal"
@@ -376,7 +397,7 @@ function CardForm({ card, onSubmit, onCancel }) {
           {(props) => (
             <input
               {...props}
-              className="card-form__input card-form__input--number"
+              className="input input--mono"
               name="min_due"
               type="number"
               inputMode="decimal"
@@ -403,7 +424,7 @@ function CardForm({ card, onSubmit, onCancel }) {
         {(props) => (
           <input
             {...props}
-            className="card-form__input card-form__input--date"
+            className="input input--mono card-form__input--date"
             name="due_date"
             type="date"
             value={values.due_date}
@@ -421,14 +442,14 @@ function CardForm({ card, onSubmit, onCancel }) {
 
       <div className="card-form__actions">
         <button
-          className="card-form__submit"
+          className="button button--primary"
           type="submit"
           disabled={submitting}
         >
           {submitting ? "Saving…" : editing ? "Save changes" : "Add card"}
         </button>
         <button
-          className="card-form__cancel"
+          className="button button--secondary"
           type="button"
           onClick={onCancel}
           disabled={submitting}

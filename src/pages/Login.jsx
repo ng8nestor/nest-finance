@@ -55,7 +55,7 @@ function Login() {
                 document even if these forms are ever rendered side by side —
                 a duplicate id silently breaks the label/input pairing. */}
             <input
-              className="auth__input"
+              className="input"
               id="login-email"
               name="email"
               type="email"
@@ -72,7 +72,7 @@ function Login() {
               Password
             </label>
             <input
-              className="auth__input"
+              className="input"
               id="login-password"
               name="password"
               type="password"
@@ -91,7 +91,11 @@ function Login() {
             </p>
           )}
 
-          <button className="auth__submit" type="submit" disabled={submitting}>
+          <button
+            className="button button--primary"
+            type="submit"
+            disabled={submitting}
+          >
             {submitting ? "Logging in…" : "Log in"}
           </button>
         </form>

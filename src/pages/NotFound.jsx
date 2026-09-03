@@ -15,7 +15,7 @@ function NotFound() {
       <p className="not-found__message">
         That URL doesn&rsquo;t match anything here.
       </p>
-      <Link className="not-found__link" to="/">
+      <Link className="button button--secondary not-found__link" to="/">
         Back home
       </Link>
     </main>

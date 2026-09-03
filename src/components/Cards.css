@@ -35,40 +35,14 @@
   font-weight: 700;
 }
 
-/* The quiet pill used for secondary actions across the app — the same shape as
-   the dashboard's log-out button and the 404 page's link. Adding a card is
-   offered, not urged: the accent fill is kept for the submit button inside the
-   form, which is the moment something actually happens. */
-.cards__add,
-.cards__retry,
-.card__action {
-  padding: var(--space-2) var(--space-4);
-  background: var(--surface-1);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-full);
-  color: var(--text);
-  font-size: var(--text-label);
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease),
-    color var(--dur-base) var(--ease);
-}
+/* Adding a card, retrying a failed request, editing and deleting a row are all
+   .button .button--secondary from styles/controls.css — the quiet outlined pill
+   the whole app uses for an action it offers rather than urges. There is
+   nothing to add here for any of them: the classes carry the shape, the colour
+   and the states, and none of these three needs positioning of its own.
 
-.cards__add:hover:not(:disabled),
-.cards__retry:hover:not(:disabled),
-.card__action:hover:not(:disabled) {
-  background: var(--surface-2);
-  border-color: var(--text-muted);
-}
-
-.cards__add:disabled,
-.cards__retry:disabled,
-.card__action:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+   The accent fill is kept for the empty state's invitation and for the form's
+   submit, which are the moments something actually happens. */
 
 /* ---------------------------------------------------------------------------
    Loading and error
@@ -101,11 +75,6 @@
   font-size: var(--text-label);
 }
 
-.cards__retry {
-  /* Readable on the tinted panel: the pill's own surface, not the tint. */
-  background: var(--surface-1);
-}
-
 /* ---------------------------------------------------------------------------
    Empty state
    --------------------------------------------------------------------------- */
@@ -134,23 +103,13 @@
   font-size: var(--text-label);
 }
 
+/* The one place an empty screen offers, so it gets .button--primary rather than
+   the quiet pill — there is nothing else here for it to compete with. All this
+   adds is the space above it: the invitation and its action are one block, and
+   the gap the column gives every child is not quite enough to make the button
+   read as the end of the sentence above rather than as the next line of it. */
 .cards__empty-action {
-  /* The one place an empty screen offers, so it gets the accent fill rather
-     than the quiet pill — there is nothing else here to compete with. */
   margin-top: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  background: var(--info);
-  border: var(--border-width) solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--bg);
-  font-size: var(--text-label);
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease);
-}
-
-.cards__empty-action:hover {
-  opacity: 0.9;
 }
 
 /* ---------------------------------------------------------------------------
@@ -451,21 +410,21 @@
   color: var(--text-secondary);
 }
 
-.card__confirm .card__action {
-  /* The pill sits on surface-2 here, so it steps up rather than disappearing
-     into the panel behind it. */
+/* The one place a control needs a correction for the surface under it. The
+   confirmation sits on --surface-2, so a pill on the shared --surface-1 would
+   sink into it rather than reading as a button; both pills inside step up a
+   level. Position and context, which is what a component stylesheet is for —
+   the shape and the states still come from controls.css.
+
+   The hover has to be restated because this selector and .button--danger:hover
+   carry the same specificity and this file is imported later, so without it the
+   background above would win over the hover the shared rule defines. */
+.card__confirm .button {
   background: var(--surface-raised);
 }
 
-.card__action--danger {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-.card__confirm .card__action--danger:hover:not(:disabled) {
+.card__confirm .button--danger:hover:not(:disabled) {
   background: var(--danger-bg);
-  border-color: var(--danger);
-  color: var(--danger);
 }
 
 /* ---------------------------------------------------------------------------
@@ -511,28 +470,9 @@
   color: var(--text-secondary);
 }
 
-.card-form__input {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  background: var(--surface-2);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  /* Body size specifically: mobile Safari zooms the page when a focused input's
-     text is under 16px, and does not zoom back out on blur. */
-  font-size: var(--text-body);
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease);
-}
-
-.card-form__input--number,
-.card-form__input--date {
-  /* Amounts and dates are typed as well as read, and the mono face keeps the
-     digits an even width while they are being entered too. */
-  font-family: var(--font-mono);
-}
-
+/* Every field here is .input from styles/controls.css, and the number and date
+   fields add .input--mono on top of it. Only the date field needs anything
+   further. */
 .card-form__input--date {
   /* A date is a fixed-width value, so the field is sized to it rather than to
      the form. Stretched across the full width it would read as the largest
@@ -543,26 +483,6 @@
      column like every other one. */
   max-width: 100%;
   width: calc(var(--space-9) * 2.5);
-}
-
-.card-form__input:hover:not(:disabled) {
-  border-color: var(--text-muted);
-}
-
-/* The focus ring comes from the app-wide :focus-visible rule in index.css.
-   Nothing to add, and nothing to remove — removing it is the usual way keyboard
-   navigation gets broken on a form. */
-
-.card-form__input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* A field the form is complaining about. The border is the only colour on the
-   input itself; recolouring the text would make what the person typed look like
-   the error, when the error is about the value, not the typing. */
-.card-form__input[aria-invalid="true"] {
-  border-color: var(--danger);
 }
 
 .card-form__hint {
@@ -590,57 +510,13 @@
   font-size: var(--text-label);
 }
 
+/* Save and Cancel are .button--primary and .button--secondary. They were the
+   clearest case for the shared file: this pair was a rounded rectangle on
+   --surface-2 with --space-3 padding, while the Edit and Delete pair one card
+   above was a pill on --surface-1 with --space-2 — two secondary buttons, a few
+   hundred pixels apart, agreeing on nothing. */
 .card-form__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-.card-form__submit {
-  padding: var(--space-3) var(--space-5);
-  /* A transparent border matching the inputs' keeps this the same height as the
-     cancel button beside it. */
-  border: var(--border-width) solid transparent;
-  border-radius: var(--radius-sm);
-  /* --info: the token for neutral, non-financial UI signals, which is what a
-     submit button is. The money accents stay reserved for money. */
-  background: var(--info);
-  color: var(--bg);
-  font-size: var(--text-label);
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease);
-}
-
-.card-form__submit:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.card-form__submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.card-form__cancel {
-  padding: var(--space-3) var(--space-5);
-  background: var(--surface-2);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-size: var(--text-label);
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease);
-}
-
-.card-form__cancel:hover:not(:disabled) {
-  background: var(--surface-raised);
-  border-color: var(--text-muted);
-}
-
-.card-form__cancel:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }

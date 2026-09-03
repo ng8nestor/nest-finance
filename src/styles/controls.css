@@ -1,0 +1,196 @@
+/* ===========================================================================
+   nest — controls
+   ---------------------------------------------------------------------------
+   The two interactive primitives the whole app is built from: .button and
+   .input. Everything clickable and everything typable takes its shape, its
+   colour and its states from this file, and nothing else defines them.
+
+   Before this existed there were four button rules and two input rules spread
+   across five stylesheets. They were near-identical, which is the problem —
+   near-identical is what drift looks like before anyone notices it. The audit
+   found a primary action that was a pill on one page and a rounded rectangle on
+   three others, two different secondary buttons (a pill on --surface-1 and a
+   rounded rectangle on --surface-2), three padding pairs across one set of
+   controls, and hover transitions running at two different durations depending
+   on whether the button was filled or outlined. None of that was a decision;
+   all of it was six copies of one idea aging separately.
+
+   ---------------------------------------------------------------------------
+   The decisions this file makes
+
+   One shape.  --radius-full, for primary and secondary alike. The pill was
+   already the app's majority language — seven of the eight secondary controls
+   and the landing page's primary — and it is the shape that matches Nunito's
+   round counters and the nest mark. The alternative was making everything
+   --radius-sm, which would have meant changing more controls to reach a shape
+   that suits the type less.
+
+   One padding pair, for both variants: --space-3 --space-5. The two variants
+   share it rather than each getting their own because they appear side by side
+   in three places — the card form's Save/Cancel, the landing page's Log in/Sign
+   up, the delete confirmation's Delete/Keep it — and two buttons in one row
+   with different vertical padding are two different heights. It is the larger
+   of the pairs in use before, which puts every control in the app at roughly
+   48px tall: over the 44px that WCAG 2.5.5 asks of a touch target, where the
+   8px-vertical pair this replaced sat just under it.
+
+   One duration. --dur-fast on every state transition here, which is what
+   tokens.css says that step is for: "hover, focus, a button press". The
+   outlined buttons were running at --dur-base, the step above, so a filled
+   button and an outlined one responded to the same gesture at different speeds.
+
+   What is NOT here is anything about where a control sits. Margins, alignment,
+   flex behaviour and any surface correction for an unusual background stay with
+   the component — .not-found__link still owns its margin, .site-header__sign-out
+   still owns its flex: none, and .card__confirm still lifts the pills inside it
+   onto --surface-raised because that panel is a step up from the page. This
+   file is what a control looks like; the component is where it goes.
+
+   Imported in main.jsx after index.css and before any component stylesheet, so
+   a component can still override a value here by naming it — same specificity,
+   later in the cascade.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Buttons
+   ---------------------------------------------------------------------------
+   Used by <button> and by the <Link>s that are buttons in everything but
+   element name — the landing page's two actions, the 404's way back, the
+   "Go to log in" after a signup. inline-flex with centred items rather than
+   text-align alone, because an <a> does not centre its own text the way a
+   <button> does, and the two have to be indistinguishable. */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  /* A border on every variant, transparent where it is not drawn, so a filled
+     button and an outlined one are the same height in the same row. */
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-full);
+  font-size: var(--text-label);
+  font-weight: 600;
+  line-height: var(--leading-body);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+/* Opacity rather than a dimmed colour token: disabled is a state, not a colour,
+   and one rule dims a filled button and an outlined one equally. */
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The accent fill, for the one action a screen is asking for: submit a form,
+   add your first card, sign up.
+
+   --info, the token for neutral, non-financial UI signals, which is what a
+   submit button is — the money accents stay reserved for money. Text in --bg
+   rather than white, because the accent is a light blue and the page colour is
+   what reads on top of it. */
+.button--primary {
+  background: var(--info);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+.button--primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* The quiet outlined pill, for everything else: log out, edit, delete, cancel,
+   retry, go back. Offered rather than urged.
+
+   --surface-1 is the default ground. On the page background that reads as a
+   raised control; on a --surface-1 panel it reads as an outline, which is the
+   right weight for a secondary action sitting inside content. */
+.button--secondary {
+  background: var(--surface-1);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--text-muted);
+}
+
+/* A modifier on the secondary, not a third variant. The destructive button in
+   the delete confirmation is the same quiet pill with the feedback colour on
+   its edge and its label — the panel around it is already the thing asking the
+   question, and a filled red button would be the loudest control in the app
+   attached to its least frequent action.
+
+   After .button--secondary in the file on purpose: the two hover rules carry
+   identical specificity, so this one wins by source order. */
+.button--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.button--danger:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ---------------------------------------------------------------------------
+   Inputs
+   ---------------------------------------------------------------------------
+   One rule for every text, number and date field in the app. The auth forms and
+   the card form had a byte-identical copy of this each, in two files.
+
+   The range slider is deliberately not here. It is drawn from scratch rather
+   than styled — appearance: none plus one rule per engine for the track and the
+   thumb — and it shares none of these properties. See PayoffSimulator.css. */
+
+.input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  /* Body size specifically: mobile Safari zooms the page when a focused input's
+     text is under 16px, and does not zoom back out on blur. */
+  font-size: var(--text-body);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* A field the form is complaining about. The border is the only colour on the
+   input itself; recolouring the text would make what the person typed look like
+   the error, when the error is about the value, not the typing. Driven off the
+   aria-invalid attribute the component already sets, so the styling and the
+   accessibility tree cannot disagree about which field is wrong. */
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+/* Amounts and dates are typed as well as read, and the mono face keeps the
+   digits an even width while they are being entered too. */
+.input--mono {
+  font-family: var(--font-mono);
+}
+
+/* The focus ring comes from the app-wide :focus-visible rule in index.css.
+   Nothing to add here, and nothing to remove — removing it is the usual way
+   keyboard navigation gets broken on a form. */

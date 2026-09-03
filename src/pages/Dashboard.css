@@ -1,33 +1,49 @@
-/* The page at "/dashboard". Tokens only, same as every other stylesheet here.
-   Deliberately sparse — it is a shell for the account details and one action,
-   not a screen with content of its own yet. */
+/* The page at "/dashboard". Tokens only, same rule as every other stylesheet
+   here.
+
+   ---------------------------------------------------------------------------
+   The column, and what separates the things in it
+
+   Four blocks, one under the next: the bleed meter, the payoff order, the list
+   of cards, the simulator. There is exactly one gap value between them, and it
+   is --space-6.
+
+   That is a step up from the --space-5 this used to run at, and the step is the
+   whole point. --space-5 is the scale's "elements within a card" value — it is
+   what the cards use between their own figures and what the summary uses
+   between its two halves. Using the same value between the panels as inside
+   them means the page has one rhythm at two levels of the hierarchy, so a
+   reader gets no help telling where one thing ends and the next begins.
+   --space-6 is the next step up, which is the one the scale reserves for
+   separating cards and sections. Nothing on this page is separated by a value
+   that is not a step on that scale.
+
+   The gutters follow the same reasoning one level out: --space-8 above the
+   title, so the page starts below the header rather than against it.
+
+   ---------------------------------------------------------------------------
+   One focal element
+
+   The bleed meter is the only thing on this screen with the roomy padding and
+   the large radius. Every other panel — the card list's rows, the simulator —
+   sits at --space-5 and --radius-md. That is deliberate and it is most of what
+   makes the hierarchy read: the summary is not louder because it shouts, it is
+   louder because everything around it agreed to be a card.
+   =========================================================================== */
 
 .dashboard {
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-5);
+  /* One step, between every pair of panels. See the note above. */
+  gap: var(--space-6);
   /* A page column rather than a centred card: this is somewhere you stay, so it
-     is laid out to be grown into, not to be passed through. */
+     is laid out to be grown into, not to be passed through. The same width as
+     the header's bar, so the wordmark above sits on this column's left edge. */
   width: 100%;
   max-width: calc(var(--space-9) * 6);
   margin-inline: auto;
-  padding: var(--space-8) var(--space-5);
-}
-
-.dashboard__header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.dashboard__brand {
-  font-size: var(--text-caption);
-  font-weight: 700;
-  letter-spacing: var(--space-1);
-  text-transform: uppercase;
-  color: var(--text-muted);
+  padding: var(--space-8) var(--space-5) var(--space-9);
 }
 
 .dashboard__title {
@@ -36,69 +52,14 @@
   font-weight: 700;
 }
 
-.dashboard__panel {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  background: var(--surface-1);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-md);
-}
+/* At 320-400px the page's own gutters are competing with the padding inside
+   every panel for the same few pixels, and the panels need theirs more — a
+   figure pressed against a hairline reads as broken in a way a narrower page
+   margin does not. The outer gutter gives way; the panels keep theirs.
 
-.dashboard__panel-label {
-  font-size: var(--text-caption);
-  font-weight: 700;
-  letter-spacing: var(--space-1);
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.dashboard__email {
-  font-size: var(--text-h3);
-  /* An address can be long and has no sensible break points of its own, so it
-     is allowed to break mid-string rather than pushing the panel wider than the
-     screen. */
-  overflow-wrap: anywhere;
-}
-
-.dashboard__error {
-  /* Same treatment as .auth__error — a failed sign-out is the same kind of
-     event as a rejected sign-in, so it gets the same feedback tokens rather
-     than a second look for the same meaning. */
-  align-self: stretch;
-  padding: var(--space-3) var(--space-4);
-  background: var(--danger-bg);
-  border: var(--border-width) solid var(--danger);
-  border-radius: var(--radius-sm);
-  color: var(--danger);
-  font-size: var(--text-label);
-}
-
-.dashboard__sign-out {
-  /* The quiet outlined treatment, not the accent fill used for the auth forms'
-     submit buttons: signing out is an exit, never the thing the page is
-     encouraging you to do. */
-  padding: var(--space-2) var(--space-5);
-  background: var(--surface-1);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-full);
-  color: var(--text);
-  font-size: var(--text-label);
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease);
-}
-
-.dashboard__sign-out:hover:not(:disabled) {
-  background: var(--surface-2);
-  border-color: var(--text-muted);
-}
-
-.dashboard__sign-out:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+   See tokens.css for why this one breakpoint is a raw length. */
+@media (max-width: 25rem) {
+  .dashboard {
+    padding: var(--space-6) var(--space-4) var(--space-8);
+  }
 }

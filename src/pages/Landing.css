@@ -5,9 +5,11 @@
    so they still move if the scale ever changes. */
 
 .landing {
-  /* One centred column. svh rather than vh so that mobile browser chrome
-     collapsing on scroll doesn't leave the content shifting around. */
-  min-height: 100svh;
+  /* One centred column. The viewport height is claimed by .app in index.css —
+     svh rather than vh there, so that mobile browser chrome collapsing on
+     scroll doesn't leave the content shifting around. The landing page is the
+     one route the header stays off, so this still fills the screen: it is the
+     shell's only child, and flex: 1 gives it everything. */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -60,40 +62,12 @@
   margin-top: var(--space-4);
 }
 
-.landing__action {
-  /* The quiet outlined pill, matching the 404's link and the dashboard's sign
-     out — the shared shape for "go somewhere else from here". */
-  padding: var(--space-2) var(--space-5);
-  background: var(--surface-1);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-full);
-  font-size: var(--text-label);
-  font-weight: 600;
-  transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease),
-    opacity var(--dur-base) var(--ease);
-}
+/* The two calls to action are .button--secondary and .button--primary from
+   styles/controls.css, and neither needs a rule here.
 
-.landing__action:hover {
-  background: var(--surface-2);
-  border-color: var(--text-muted);
-}
-
-.landing__action--primary {
-  /* --info is the token for neutral, non-financial UI signals, which is what a
-     call to action is; the money accents stay reserved for money. Text is --bg
-     because the accent is a light blue — the page colour is what reads on it. */
-  background: var(--info);
-  border-color: transparent;
-  color: var(--bg);
-  font-weight: 700;
-}
-
-.landing__action--primary:hover {
-  /* Overrides the outlined hover above: a filled control dims rather than
-     changing surface, since it has no surface underneath to change to. */
-  background: var(--info);
-  border-color: transparent;
-  opacity: 0.9;
-}
+   This page is where the shared shape came from. Its Sign up was the only
+   primary in the app already drawn as a pill; the three others were rounded
+   rectangles, and that split is what the audit turned up. Unifying on the pill
+   rather than the rectangle is what settled which of the two was the app's real
+   language — it was already the majority, and it is the shape that suits
+   Nunito's round counters and the nest mark. */
