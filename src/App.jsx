@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import SiteHeader from "./components/SiteHeader.jsx";
 import Landing from "./pages/Landing.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
@@ -60,25 +61,36 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
-          {/* The gate goes here, in the route table, rather than inside
-              Dashboard itself. It keeps the rule visible in the one place
-              someone looks to find out what the app's URLs do, and it means
-              Dashboard never renders at all for a signed-out visitor — not even
-              for the frame before a check inside it could redirect. */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        {/* The app shell: a single column holding the header and, beneath it,
+            whichever page the router resolved to. It is what owns the viewport
+            height now — see the note on .app in index.css for why that moved off
+            the individual pages the moment a header appeared above them. */}
+        <div className="app">
+          {/* Outside Routes, so it is one element that persists across every
+              navigation rather than four copies that each mount and unmount
+              with the page under them. It reads the current path itself to stay
+              off the landing page — see the note in the component. */}
+          <SiteHeader />
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+            {/* The gate goes here, in the route table, rather than inside
+                Dashboard itself. It keeps the rule visible in the one place
+                someone looks to find out what the app's URLs do, and it means
+                Dashboard never renders at all for a signed-out visitor — not
+                even for the frame before a check inside it could redirect. */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
       </AuthProvider>
     </BrowserRouter>
   );

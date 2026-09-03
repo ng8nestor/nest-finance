@@ -36,10 +36,10 @@ function Landing() {
           the same two-tier button language used on the auth pages, so the
           weight of each control matches what it does. */}
       <nav className="landing__actions" aria-label="Account">
-        <Link className="landing__action" to="/login">
+        <Link className="button button--secondary" to="/login">
           Log in
         </Link>
-        <Link className="landing__action landing__action--primary" to="/signup">
+        <Link className="button button--primary" to="/signup">
           Sign up
         </Link>
       </nav>

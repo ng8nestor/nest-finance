@@ -63,7 +63,7 @@ function Figure({ label, value, tone }) {
   );
 }
 
-function CardItem({ card, rank, heat, onEdit, onDelete }) {
+function CardItem({ card, rank, heat, restoreFocus, onEdit, onDelete }) {
   // null when the card has no due date, which is the normal state of a card
   // nobody has entered one for. The <Figure> below is skipped entirely in that
   // case: no row, no label, no dash. A placeholder would put an empty promise
@@ -83,19 +83,56 @@ function CardItem({ card, rank, heat, onEdit, onDelete }) {
   const [error, setError] = useState(null);
 
   const keepRef = useRef(null);
+  const deleteRef = useRef(null);
+  const editRef = useRef(null);
 
-  // Pressing Delete removes that button from the page and puts the two
-  // confirmation buttons where it was — which drops keyboard focus onto the
-  // body, leaving anyone not using a mouse with no idea where they are and a
+  // Whether the confirmation was open on the previous render, so the effect
+  // below can tell "it just closed" from "it has never been open". A ref rather
+  // than state: it is read inside an effect to decide what that effect does,
+  // and storing it in state would schedule a render for a value nothing draws.
+  const wasConfirming = useRef(false);
+
+  // Both directions of the confirmation swap, because both of them replace the
+  // button that was focused with a different one.
+  //
+  // Opening: pressing Delete removes that button from the page and puts the two
+  // confirmation buttons where it was, which drops keyboard focus onto the body
+  // — leaving anyone not using a mouse with no idea where they are and a
   // question on screen they cannot answer without tabbing from the top.
   //
   // Focus moves to "Keep it", the harmless choice. Never to the confirm button:
   // someone who pressed Delete and then Enter — or Space, still held from
   // activating the first button — would have deleted a card in one gesture
   // without reading the question.
+  //
+  // Closing: "Keep it" unmounts itself, so focus has to be put back on the
+  // Delete button it came from. That is the rule the whole app follows now —
+  // a control that dismisses something returns focus to the control that
+  // summoned it — and it is what makes backing out of the confirmation cost one
+  // keystroke instead of a walk down the page.
+  //
+  // A failed delete lands here too: the request sets confirming back to false,
+  // so focus returns to Delete with the error message announced beside it.
   useEffect(() => {
-    if (confirming) keepRef.current?.focus();
+    if (confirming) {
+      keepRef.current?.focus();
+    } else if (wasConfirming.current) {
+      deleteRef.current?.focus();
+    }
+
+    wasConfirming.current = confirming;
   }, [confirming]);
+
+  // Set by the list when this card's edit form closes. The Edit button that
+  // opened that form was unmounted along with the whole card, so the focus has
+  // to be restored by the card that takes its place — this one, freshly
+  // mounted, which is the only thing holding a reference to the new button.
+  //
+  // See the note in CardList.jsx on why the request is a card id passed down
+  // rather than a ref held up there.
+  useEffect(() => {
+    if (restoreFocus) editRef.current?.focus();
+  }, [restoreFocus]);
 
   async function handleDelete() {
     setError(null);
@@ -232,7 +269,7 @@ function CardItem({ card, rank, heat, onEdit, onDelete }) {
           </p>
           <div className="card__actions">
             <button
-              className="card__action card__action--danger"
+              className="button button--secondary button--danger"
               type="button"
               onClick={handleDelete}
               disabled={deleting}
@@ -240,7 +277,7 @@ function CardItem({ card, rank, heat, onEdit, onDelete }) {
               {deleting ? "Deleting…" : "Delete"}
             </button>
             <button
-              className="card__action"
+              className="button button--secondary"
               type="button"
               ref={keepRef}
               onClick={() => setConfirming(false)}
@@ -253,15 +290,17 @@ function CardItem({ card, rank, heat, onEdit, onDelete }) {
       ) : (
         <div className="card__actions">
           <button
-            className="card__action"
+            className="button button--secondary"
             type="button"
+            ref={editRef}
             onClick={() => onEdit(card.id)}
           >
             Edit
           </button>
           <button
-            className="card__action"
+            className="button button--secondary"
             type="button"
+            ref={deleteRef}
             onClick={() => setConfirming(true)}
           >
             Delete

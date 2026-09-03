@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useAuth } from "../hooks/useAuth.js";
 import { useCards } from "../hooks/useCards.js";
 import DebtCommandCenter from "../components/DebtCommandCenter.jsx";
 import PayoffStrategy from "../components/PayoffStrategy.jsx";
@@ -7,27 +5,25 @@ import CardList from "../components/CardList.jsx";
 import PayoffSimulator from "../components/PayoffSimulator.jsx";
 import { usePayoffStrategy } from "../hooks/usePayoffStrategy.js";
 import { orderCards } from "../lib/payoff.js";
-import { SITE_NAME } from "../lib/site.js";
 import "./Dashboard.css";
 
 // The page at "/dashboard", rendered only inside <ProtectedRoute>.
 //
-// Because of that wrapper, this component can read `user` without a null check:
-// ProtectedRoute renders nothing while the session is loading and redirects
-// when there is none, so by the time this runs a session — and therefore a
-// user — is guaranteed to exist. Putting the guard in one place is what keeps
-// every protected page from repeating it.
+// It no longer touches the auth context at all. The two things that needed it —
+// the address you are signed in as and the way to sign out — now live in the
+// persistent header, where they are reachable from every screen rather than
+// from the bottom of this one. What is left here is the debt: a figure, a
+// choice, a list, and a question about them, in that order.
 function Dashboard() {
-  const { user, signOut } = useAuth();
-
   // One request, two readers. The summary and the list are computed from the
   // same array in the same render, so the total above can never describe a set
   // of cards different from the one below it — see hooks/useCards.js for why
   // that is worth lifting the fetch out of CardList for.
-  // `error` is renamed on the way out. The page already has one — the sign-out
-  // failure below — and the two are unrelated failures of unrelated actions.
-  // Sharing one name would mean the next person reading this has to work out
-  // which of two things went wrong from context.
+  //
+  // `error` is still renamed on the way out even though the sign-out failure it
+  // used to share this page with has moved up to the header. The name says what
+  // the failure was about rather than that it is the only one here, which is
+  // what keeps it right if a second one ever arrives.
   const {
     cards,
     loading,
@@ -54,37 +50,16 @@ function Dashboard() {
   // would suggest it depended on something it does not.
   const ordered = orderCards(cards, strategy);
 
-  const [signingOut, setSigningOut] = useState(false);
-  const [error, setError] = useState(null);
-
-  async function handleSignOut() {
-    setError(null);
-    setSigningOut(true);
-
-    const { error: message } = await signOut();
-
-    if (message) {
-      setError(message);
-      setSigningOut(false);
-      return;
-    }
-
-    // No navigate() on success, on purpose. Signing out clears the session, the
-    // listener in AuthContext sets it to null, ProtectedRoute re-renders and
-    // sends us to /login on its own. Adding a redirect here would be a second
-    // route to the same outcome — one that would then need updating in step
-    // with the first.
-  }
-
   return (
     <main className="dashboard">
-      <header className="dashboard__header">
-        <p className="dashboard__brand">{SITE_NAME}</p>
-        {/* The page's own title, not the cards' — the section below names
-            itself, and two headings both reading "Your cards" would be one
-            heading and an echo. */}
-        <h1 className="dashboard__title">Dashboard</h1>
-      </header>
+      {/* The page's own title, not the cards' — the section below names itself,
+          and two headings both reading "Your cards" would be one heading and an
+          echo.
+
+          No wordmark above it any more. The persistent header carries the mark
+          on every screen now, and a second one here would be the same brand
+          twice in the top two hundred pixels of the page. */}
+      <h1 className="dashboard__title">Dashboard</h1>
 
       {/* Above the list, and first on the page after its title, because it is
           the answer to the question someone opens this screen with. The list
@@ -136,26 +111,6 @@ function Dashboard() {
         error={cardsError}
         strategy={strategy}
       />
-
-      <section className="dashboard__panel">
-        <h2 className="dashboard__panel-label">Account</h2>
-        <p className="dashboard__email">{user.email}</p>
-      </section>
-
-      {error && (
-        <p className="dashboard__error" role="alert">
-          {error}
-        </p>
-      )}
-
-      <button
-        className="dashboard__sign-out"
-        type="button"
-        onClick={handleSignOut}
-        disabled={signingOut}
-      >
-        {signingOut ? "Logging out…" : "Log out"}
-      </button>
     </main>
   );
 }

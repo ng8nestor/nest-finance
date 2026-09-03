@@ -606,7 +606,12 @@ function totalOf(debts, read) {
 // the body, which is what keeps this function pure in the sense the rest of
 // the file is: called with a date it is deterministic and testable, and the
 // default is a convenience for the screen, which always means now.
-export function simulatePayoff(cards, extraPayment, strategy, today = new Date()) {
+export function simulatePayoff(
+  cards,
+  extraPayment,
+  strategy,
+  today = new Date(),
+) {
   const debts = toSimulationCards(cards);
   if (debts === null) return null;
 
@@ -655,8 +660,12 @@ export function simulatePayoff(cards, extraPayment, strategy, today = new Date()
   // Strictly greater, so a payment exactly equal to the interest counts as
   // never clearing — because it is. The balance would sit unchanged forever.
   // ---------------------------------------------------------------------
-  const committed = toCents(totalOf(debts, (debt) => debt.minimum) + monthlyExtra);
-  const firstInterest = totalOf(debts, (debt) => toCents(debt.balance * debt.rate));
+  const committed = toCents(
+    totalOf(debts, (debt) => debt.minimum) + monthlyExtra,
+  );
+  const firstInterest = totalOf(debts, (debt) =>
+    toCents(debt.balance * debt.rate),
+  );
 
   if (committed <= firstInterest) return neverClears();
 

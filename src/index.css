@@ -117,9 +117,53 @@ a {
 
 /* One visible focus ring for the whole app, on keyboard focus only — :focus
    alone would draw the ring on mouse clicks too, which is why so many sites
-   remove it entirely and break keyboard navigation in the process. */
+   remove it entirely and break keyboard navigation in the process.
+
+   The border-radius is a floor, not an override. An outline follows the border
+   radius of the box it surrounds, so a focusable element with no radius of its
+   own — a bare link, the wordmark in the header — would otherwise get a hard
+   rectangular ring in a UI where nothing else has a square corner. This gives
+   those the small radius as a default.
+
+   It cannot deform a control that has a radius already, which is the failure
+   mode this shape of rule usually has. :focus-visible and a component's own
+   class selector carry identical specificity, and both controls.css and every
+   component stylesheet are imported after this file, so the later rule wins: a
+   pill focused by keyboard keeps its --radius-full. Worth stating because it is
+   decided by source order rather than by anything visible in this rule, and
+   moving this file's import below the others would silently start squaring off
+   every pill in the app on tab.
+
+   The ring itself is a token — see the note in tokens.css on why, and on the
+   two controls that have to forward it to something other than the element
+   holding focus. */
 :focus-visible {
-  outline: calc(var(--space-1) / 2) solid var(--info);
-  outline-offset: calc(var(--space-1) / 2);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
   border-radius: var(--radius-sm);
+}
+
+/* ---------------------------------------------------------------------------
+   The app shell
+   ---------------------------------------------------------------------------
+   One column: the persistent header, then whatever page the router resolved to.
+
+   The pages used to each claim min-height: 100svh, which was right when a page
+   was the whole document and wrong the moment a header sat above one — the two
+   together would come to a full viewport plus the header's height, so every
+   screen in the app would scroll by exactly that much with nothing at the
+   bottom to scroll to. The height claim moves here, to the thing that is
+   actually the viewport, and the pages take what is left with flex: 1. */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+.app > main {
+  flex: 1;
+  /* A flex item will not shrink below its content's minimum size by default,
+     which on a narrow screen is what turns one long unbreakable string inside a
+     panel into a horizontally scrolling page. */
+  min-width: 0;
 }

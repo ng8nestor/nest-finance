@@ -97,8 +97,8 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease);
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
 .payoff__pill:hover {
@@ -110,14 +110,13 @@
    the input, and the input is a clipped 1px box, so without this a keyboard
    user tabs onto this control and sees nothing at all.
 
-   The values are copied from that rule rather than shared, which is the one
-   duplication in this file. A custom property would be the tidy fix and would
-   also be the only one of its kind in the app; if a second component ever needs
-   the same forwarding, that is the moment to add it to tokens.css rather than
-   now. */
+   From the token now, not copied. This file used to carry the literal values
+   and a note saying they should move to tokens.css as soon as a second
+   component needed the same forwarding — the range slider is that second
+   component, so they did. */
 .payoff__input:focus-visible + .payoff__pill {
-  outline: calc(var(--space-1) / 2) solid var(--info);
-  outline-offset: calc(var(--space-1) / 2);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* The selected option. Three things change at once — the surface lifts a step,
@@ -135,7 +134,10 @@
   font-size: var(--text-label);
   font-weight: 700;
   color: var(--text-secondary);
-  transition: color var(--dur-base) var(--ease);
+  /* The same step as the pill's own transition above, so the surface, the
+     hairline and the label all settle together rather than the text arriving
+     after the box it sits in. */
+  transition: color var(--dur-fast) var(--ease);
 }
 
 .payoff__input:checked + .payoff__pill .payoff__name {

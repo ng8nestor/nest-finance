@@ -1,0 +1,120 @@
+/* The app's persistent header. Tokens only, same rule as every other stylesheet
+   here — anything not literally on the scale is written as a multiple of a
+   token so it moves when the scale does.
+
+   Deliberately the lightest surface in the app: no background of its own, one
+   hairline along the bottom. A header is a frame, and a framed page whose frame
+   is a filled bar has spent contrast on the one region that never carries
+   content. The rule alone is enough to say where the page starts. */
+
+.site-header {
+  /* Not sticky. The dashboard is a reading column — a figure, a choice, a list,
+     a chart — and a bar pinned over the top of it would take a fixed slice of a
+     320px-tall phone viewport for the whole scroll in exchange for a log-out
+     button nobody is reaching for mid-scroll. It scrolls away like everything
+     else and is one flick from the top. */
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.site-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  /* The same page column as the dashboard, so the wordmark sits on the same
+     left edge as the panels underneath it rather than on the viewport's. */
+  width: 100%;
+  max-width: calc(var(--space-9) * 6);
+  margin-inline: auto;
+  padding: var(--space-4) var(--space-5);
+}
+
+.site-header__home {
+  /* Never squeezed by a long address beside it: the mark is the one fixed thing
+     in the row. */
+  flex: none;
+  display: flex;
+}
+
+.site-header__wordmark {
+  /* The export is a 960x960 square with the wordmark floating in a lot of
+     transparent air, so scaling it by height alone would draw a 24px-tall box
+     with about 10px of letterforms in the middle of it. Cropping to a wide
+     window with object-fit trims the air away, exactly as the landing page
+     does with the same asset — the difference is only which dimension is
+     driving. Here the height is fixed to the row and the aspect ratio gives the
+     width; there the width is fixed to the column and the ratio gives the
+     height. Same crop, same mark, two contexts. */
+  height: var(--space-5);
+  width: auto;
+  aspect-ratio: 7 / 2;
+  object-fit: cover;
+}
+
+.site-header__account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* Without this the address refuses to shrink below its own width and pushes
+     the header wider than the screen — the truncation below never gets a
+     chance to happen. */
+  min-width: 0;
+}
+
+.site-header__email {
+  /* Truncated rather than wrapped. An address has no break points of its own,
+     so wrapping it splits a single unbroken string across two lines and doubles
+     the header's height on exactly the screens with the least of it to spare.
+     One line, cut with an ellipsis, with the whole address on the title
+     attribute in the JSX for anyone who needs it. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+/* .button .button--secondary from styles/controls.css: signing out is an exit,
+   never the thing a page is encouraging you to do, so it takes the quiet
+   outlined pill rather than the accent fill.
+
+   The one thing it adds is refusing to shrink. It shares the row with an email
+   address that can be arbitrarily long, and a flex item's default is to give up
+   width before its neighbour does — which would compress the button rather than
+   truncating the text, exactly backwards. */
+.site-header__sign-out {
+  flex: none;
+}
+
+/* Same treatment as every other error region in the app — a tinted panel with
+   a hairline, in the feedback tokens rather than --debt, because a sign-out
+   that failed has nothing to do with money owed. */
+.site-header__error {
+  width: 100%;
+  max-width: calc(var(--space-9) * 6);
+  margin-inline: auto;
+  margin-block-end: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--danger-bg);
+  border: var(--border-width) solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+/* At 320-400px the row has a wordmark, an address and a button to fit into
+   roughly 290px of usable width. The address gives up first — truncated to a
+   few characters it is no longer answering the question it is there for, and
+   the two controls beside it are. It comes back the moment there is room.
+
+   See tokens.css for why this one breakpoint is a raw length. */
+@media (max-width: 25rem) {
+  .site-header__bar {
+    padding: var(--space-4);
+  }
+
+  .site-header__email {
+    display: none;
+  }
+}

@@ -340,7 +340,10 @@ function PayoffSimulator({ cards, loading, error, strategy }) {
       <div className="simulator__figures">
         {withExtra.clears ? (
           <>
-            <Figure label="Debt-free" value={formatMonth(withExtra.payoffDate)} />
+            <Figure
+              label="Debt-free"
+              value={formatMonth(withExtra.payoffDate)}
+            />
             <Figure
               label="Interest paid"
               value={formatCurrency(withExtra.totalInterest)}
@@ -437,6 +440,22 @@ function PayoffSimulator({ cards, loading, error, strategy }) {
               <LineChart
                 data={rows}
                 margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                // Off, because what it adds here is a trap rather than a
+                // feature. Recharts' accessibility layer puts tabindex="0" and
+                // role="application" on the <svg> it draws: a keyboard user
+                // reaches it as the last stop on the dashboard, lands on a
+                // region with no accessible name, and — because role
+                // application tells a screen reader to stop interpreting keys
+                // and hand them to the app — finds that their normal reading
+                // keys now do nothing, since nothing here listens for them.
+                //
+                // Nothing is lost by removing it. Every figure the chart plots
+                // is already on the page as text directly above it: the payoff
+                // date, the interest paid, the interest saved and the months
+                // saved, all from the same simulation. The chart is the shape
+                // of that argument, not a second source for it, which is why
+                // the tooltip is a pointer affordance and the numbers are not.
+                accessibilityLayer={false}
               >
                 {/* Horizontal rules only. Vertical ones would divide the plot
                     into a grid of boxes and compete with the lines for it; the
@@ -450,7 +469,9 @@ function PayoffSimulator({ cards, loading, error, strategy }) {
                 <XAxis
                   dataKey="month"
                   ticks={yearTicks(rows.length)}
-                  tickFormatter={(month) => (month === 0 ? "now" : `${month}mo`)}
+                  tickFormatter={(month) =>
+                    month === 0 ? "now" : `${month}mo`
+                  }
                   stroke="var(--border)"
                   tickLine={false}
                   // Typography is set in the stylesheet, on the <text> these

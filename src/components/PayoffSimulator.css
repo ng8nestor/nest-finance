@@ -36,10 +36,17 @@
      verdict, chart — and they need to read as a sequence rather than as a
      stack. The parts set their own internal spacing tighter than this. */
   gap: var(--space-5);
-  padding: var(--space-6) var(--space-5);
+  /* A card's padding and a card's radius, not the summary's. This panel used to
+     carry both of the summary's — the roomier --space-6 padding and
+     --radius-lg — which made the two of them read as a matched pair with the
+     card list in between, and a screen with two focal elements has none.
+     --radius-lg and the extra padding now belong to the bleed meter alone; this
+     is a card like every other panel on the page, and the thing that makes it
+     worth reading is what it says rather than how it is framed. */
+  padding: var(--space-5);
   background: var(--surface-1);
   border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 
 .simulator__header {
@@ -76,6 +83,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
+  /* The label is uppercase and letterspaced and the amount is a five-figure
+     currency string; below about 360px the pair is wider than the panel they
+     sit in. Wrapping puts the amount on its own line under the label, which is
+     where it would have gone anyway — pushing the panel past the edge of the
+     screen is the only other thing a flex row can do here. */
+  flex-wrap: wrap;
 }
 
 /* Set like every other figure label in the app: small, uppercase, letterspaced,
@@ -101,7 +114,13 @@
    still. */
 .simulator__amount {
   font-family: var(--font-mono);
-  font-size: var(--text-h1);
+  /* --text-h2, down a step from the --text-h1 this was. It is still the largest
+     figure on the panel and still the second-largest on the dashboard, which is
+     what the note below is about — but at h1 it was one step from the bleed
+     meter's display and read as a second headline rather than as a control's
+     value. The meter is the focal element on this screen; the gap has to be
+     visible for that to be true. */
+  font-size: var(--text-h2);
   line-height: var(--leading-h1);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -188,20 +207,22 @@
 /* The app-wide :focus-visible rule in index.css outlines the input's box, which
    here is a wide transparent strip rather than the thing on screen. The ring
    goes on the thumb instead, which is what a keyboard user is actually moving.
-   Same values as that rule — see the identical note in PayoffStrategy.css about
-   why they are copied rather than shared. */
+
+   From the same token the app-wide rule uses — see tokens.css. This is the
+   second component to forward the ring rather than take it on the focused
+   element itself, which is what turned those values into a token. */
 .simulator__slider:focus {
   outline: none;
 }
 
 .simulator__slider:focus-visible::-webkit-slider-thumb {
-  outline: calc(var(--space-1) / 2) solid var(--info);
-  outline-offset: calc(var(--space-1) / 2);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .simulator__slider:focus-visible::-moz-range-thumb {
-  outline: calc(var(--space-1) / 2) solid var(--info);
-  outline-offset: calc(var(--space-1) / 2);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* The two ends of the range. Muted and small: they are there so the track has a
@@ -233,7 +254,10 @@
    one per line, which is the right answer on a phone. */
 .simulator__figures {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-9) * 2), 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(calc(var(--space-9) * 2), 1fr)
+  );
   gap: var(--space-4);
   padding: var(--space-4) 0;
   border-top: var(--border-width) solid var(--border);

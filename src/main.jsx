@@ -1,9 +1,19 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-// tokens.css must come first: index.css and every page stylesheet read the
-// custom properties it defines, so it has to be in the cascade before them.
+// Order matters, and it is the cascade's order, not an alphabetical one.
+//
+//   tokens.css    first, because everything below reads the custom properties
+//                 it defines and a var() cannot resolve against a declaration
+//                 that has not been parsed yet.
+//   index.css     the reset and the app shell.
+//   controls.css  the shared .button and .input primitives. After the reset so
+//                 it can build on it, and before any component stylesheet so a
+//                 component can still override one of its values by naming it —
+//                 the two selectors carry the same specificity, so the later
+//                 one wins and "later" is decided right here.
 import "./styles/tokens.css";
 import "./index.css";
+import "./styles/controls.css";
 import App from "./App.jsx";
 
 // Step 2 of 4: this file is the entry point — the bridge from plain HTML to React.

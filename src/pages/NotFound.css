@@ -3,7 +3,8 @@
    only, same rule as Landing.css. */
 
 .not-found {
-  min-height: 100svh;
+  /* The viewport height is claimed by .app in index.css, which is the element
+     that actually is the viewport now that a header sits above this one. */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -33,22 +34,10 @@
   text-wrap: balance;
 }
 
+/* The way out is .button .button--secondary — a way out rather than a call to
+   action, so it takes the quiet pill and not the fill. The space above it is
+   all this adds: the code, the title and the message are one block of copy, and
+   the button is a separate thing to do rather than the fourth line of it. */
 .not-found__link {
-  /* A quiet outlined button. --border is translucent, so it picks up the page
-     background underneath and needs no surface of its own to sit on. */
   margin-top: var(--space-3);
-  padding: var(--space-2) var(--space-5);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-full);
-  background: var(--surface-1);
-  font-size: var(--text-label);
-  font-weight: 600;
-  transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease);
-}
-
-.not-found__link:hover {
-  background: var(--surface-2);
-  border-color: var(--text-muted);
 }

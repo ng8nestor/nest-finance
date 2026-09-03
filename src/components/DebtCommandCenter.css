@@ -157,6 +157,11 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
+  /* "Credit used" is uppercase and letterspaced, and a utilisation over the
+     limit runs to four characters; on a 320px screen the two together are
+     within a few pixels of the panel's inner width. Wrapping is the only
+     outcome here that does not push the page sideways. */
+  flex-wrap: wrap;
 }
 
 .usage__label {
