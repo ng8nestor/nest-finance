@@ -4,13 +4,11 @@ A debt dashboard that tells you, in dollars, what carrying your credit card bala
 
 **Live demo → [nest-finance-nine.vercel.app](https://nest-finance-nine.vercel.app)**
 
-<!-- DEMO GIF GOES HERE — dashboard bleed meter, strategy toggle, simulator slider.
-     Drop the file at docs/demo.gif and replace this comment with:
-     ![nest demo](docs/demo.gif) -->
+![nest demo](docs/demo.gif)
 
 ## What it's for
 
-Most budgeting apps look backwards: they categorize what you already spent and show you a pie chart of it. That's a useful thing to know and a bad thing to act on, because the money you spent is gone. nest asks a different question — what is your debt costing you *right now*, before you do anything at all?
+Most budgeting apps look backwards: they categorize what you already spent and show you a pie chart of it. That's a useful thing to know and a bad thing to act on, because the money you spent is gone. nest asks a different question — what is your debt costing you _right now_, before you do anything at all?
 
 The answer is the **interest bleed meter**, the number at the top of the dashboard: the sum of every card's monthly interest, labeled "Leaving your pocket every month," with the twelve-month projection under it and a one-line clarification that none of it reduces what you owe. It's the same arithmetic on a statement, but a statement shows one card and shows a payment received. This shows all of them and shows what you got for nothing. If the numbers for any card are unusable, the total refuses to render rather than quietly summing the rows it likes — an understated bleed figure is worse than no figure.
 
@@ -27,15 +25,15 @@ The answer is the **interest bleed meter**, the number at the top of the dashboa
 
 ## Tech stack
 
-| | |
-|---|---|
-| React 19 | The app is one screen of derived state; components re-deriving from a card list is the whole architecture. |
-| Vite 8 | Dev server with HMR, and `import.meta.env` handles the environment split without a config layer. |
-| React Router 7 | Four routes, and the auth gate belongs in the route table where it's visible. |
-| Supabase | Postgres, auth, and row-level security in one service — no backend to write or deploy. |
-| Recharts | The only chart in the app is a two-series line chart; a full viz library would be more code than the chart. |
-| Vanilla CSS + custom properties | Design tokens in `src/styles/tokens.css`; no component CSS hardcodes a color or a pixel value. |
-| Vercel | Static hosting plus the SPA rewrite in `vercel.json`, which is all a client-routed build needs. |
+|                                 |                                                                                                             |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| React 19                        | The app is one screen of derived state; components re-deriving from a card list is the whole architecture.  |
+| Vite 8                          | Dev server with HMR, and `import.meta.env` handles the environment split without a config layer.            |
+| React Router 7                  | Four routes, and the auth gate belongs in the route table where it's visible.                               |
+| Supabase                        | Postgres, auth, and row-level security in one service — no backend to write or deploy.                      |
+| Recharts                        | The only chart in the app is a two-series line chart; a full viz library would be more code than the chart. |
+| Vanilla CSS + custom properties | Design tokens in `src/styles/tokens.css`; no component CSS hardcodes a color or a pixel value.              |
+| Vercel                          | Static hosting plus the SPA rewrite in `vercel.json`, which is all a client-routed build needs.             |
 
 ## Architecture
 
@@ -92,7 +90,7 @@ aprHeat(card, cards)    = (apr - minApr) / (maxApr - minApr)   // 1 when every r
 
 ## The payoff simulator
 
-`simulatePayoff(cards, extraPayment, strategy, today)` runs a month-by-month loop rather than a closed-form expression. There is an exact formula for clearing a *single* balance at a fixed payment — it just answers a different problem. The thing being modeled is a *set* of balances where the events that matter are discrete: the target card switches the instant one hits zero, a cleared card's minimum isn't saved but rolled onto the next card, and the payment order is recomputed each month over whatever still has a balance (under snowball, the smallest balance changes hands as cards shrink). A formula that assumed those away would be very precise about an easier question.
+`simulatePayoff(cards, extraPayment, strategy, today)` runs a month-by-month loop rather than a closed-form expression. There is an exact formula for clearing a _single_ balance at a fixed payment — it just answers a different problem. The thing being modeled is a _set_ of balances where the events that matter are discrete: the target card switches the instant one hits zero, a cleared card's minimum isn't saved but rolled onto the next card, and the payment order is recomputed each month over whatever still has a balance (under snowball, the smallest balance changes hands as cards shrink). A formula that assumed those away would be very precise about an easier question.
 
 Each iteration: charge interest on every balance, pay each card's minimum capped at what it owes, sweep every unspent dollar of minimum plus the extra into a pool, then throw the whole pool at the current target — cascading to the next card if the pool overshoots.
 
